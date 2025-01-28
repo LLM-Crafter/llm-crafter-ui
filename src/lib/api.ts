@@ -12,6 +12,37 @@ export interface Organization {
     owner: string;
 }
 
+interface Provider {
+    _id: string;
+    name: string;
+    models: string[];
+    createdAt?: Date;
+    updatedAt?: Date;
+  }
+
+interface LLMConfiguration {
+    provider: string;
+    api_key: string;
+    model?: string;
+    default_parameters?: Map<string, any>;
+  }
+  
+  interface Project {
+    _id: string;
+    name: string;
+    description?: string;
+    organization: string;
+    llm_configurations: LLMConfiguration[];
+    createdAt?: Date;
+    updatedAt?: Date;
+  }
+
+  export interface ApiKeyDTO {
+    name?: string;
+    key?: string;
+    provider?: string;
+  }
+
 export interface CreateOrganizationDTO {
     name: string;
     description?: string;
@@ -70,6 +101,43 @@ class ApiClient {
         });
 
         if (!response.ok) throw new Error('Failed to create organization');
+        return response.json();
+    }
+
+    async getOrganizationProjects(org_id : string): Promise<Project[]> {
+        const response = await this.fetch('/organizations/'+org_id+'/projects');
+        if (!response.ok) throw new Error('Failed to fetch projects');
+        return response.json();
+    }
+
+    async getProject(org_id : string, project_id: string): Promise<Project> {
+        const response = await this.fetch('/organizations/'+org_id+'/projects/'+project_id);
+        if (!response.ok) throw new Error('Failed to fetch project');
+        return response.json();
+    }
+
+    async getProviders(): Promise<Provider[]> {
+        const response = await this.fetch('/providers');
+        if (!response.ok) throw new Error('Failed to fetch providers');
+        return response.json();
+    }
+
+    async createApiKey(org_id : string, project_id: string, data: ApiKeyDTO): Promise<ApiKeyDTO> {
+        const response = await this.fetch('/organizations/'+org_id+'/projects/'+project_id+'/api-keys', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) throw new Error('Failed to create api key');
+        return response.json();
+    }
+
+    async deleteApiKey(org_id : string, project_id: string, apiKeyId: string): Promise<{}> {
+        const response = await this.fetch('/organizations/'+org_id+'/projects/'+project_id+'/api-keys/' + apiKeyId, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) throw new Error('Failed to delete api key');
         return response.json();
     }
 }

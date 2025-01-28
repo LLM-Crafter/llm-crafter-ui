@@ -1,5 +1,6 @@
 <script lang="ts">
 	export let data;
+	let userDropdownVisible: boolean = false;
 	console.log(data);
 </script>
 
@@ -57,7 +58,7 @@
 						id="org-switcher"
 						class="flex items-center space-x-2 rounded-lg border border-gray-800 bg-gray-900 px-4 py-2 text-gray-100 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
 					>
-						<span>Organization 1</span>
+						<span>{data.organizations.find((obj) => obj._id == data.organization_id)?.name}</span>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							class="h-5 w-5 text-gray-400"
@@ -76,6 +77,7 @@
 				<!-- User Profile -->
 				<div class="relative">
 					<button
+						on:click={() => (userDropdownVisible = !userDropdownVisible)}
 						id="profile-menu"
 						class="flex items-center space-x-2 rounded-lg border border-gray-800 bg-gray-900 px-4 py-2 text-gray-100 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
 					>
@@ -98,6 +100,27 @@
 							/>
 						</svg>
 					</button>
+					<div
+						id="profile-dropdown"
+						class:hidden={!userDropdownVisible}
+						class="absolute right-0 mt-2 w-48 rounded-lg border border-gray-800 bg-gray-900 shadow-lg"
+					>
+						<ul class="py-2">
+							<li>
+								<a href="#" class="block px-4 py-2 text-gray-300 hover:bg-gray-800">Profile</a>
+							</li>
+							<li>
+								<a href="#" class="block px-4 py-2 text-gray-300 hover:bg-gray-800">Settings</a>
+							</li>
+							<li>
+								<a
+									href="/logout"
+									data-sveltekit-reload
+									class="block px-4 py-2 text-red-500 hover:bg-gray-800">Log Out</a
+								>
+							</li>
+						</ul>
+					</div>
 				</div>
 			</div>
 		</header>
