@@ -43,10 +43,51 @@ interface LLMConfiguration {
     provider?: string;
   }
 
+  export interface PromptCreateDTO {
+    name?: string;
+  }
+
+  export interface PromptUpdateDTO {
+  api_key?: string;
+  description?: string;
+  content?: string;
+  llm_settings?: LLMSettings;
+}
+
 export interface CreateOrganizationDTO {
     name: string;
     description?: string;
 }
+
+export interface LLMSettings {
+    model?: string;
+    parameters?: {
+      temperature?: number;
+      max_tokens?: number;
+      top_p?: number;
+      frequency_penalty?: number;
+      presence_penalty?: number;
+    };
+  }
+  
+export interface Prompt {
+    _id: string;
+    name: string;
+    description?: string;
+    content?: string;
+    project: string;
+    version?: number;
+    api_key?: string;
+    llm_settings?: LLMSettings;
+    createdAt?: Date;
+    updatedAt?: Date;
+  }
+
+export interface ExecutePromptParameters {
+    variables: {
+      [key: string]: any;
+    };
+  }
 
 class ApiClient {
     async fetch(endpoint: string, options: RequestInit = {}) {
@@ -138,6 +179,65 @@ class ApiClient {
         });
 
         if (!response.ok) throw new Error('Failed to delete api key');
+        return response.json();
+    }
+
+    async getPrompt(org_id : string, project_id: string, prompt_id: string): Promise<Prompt> {
+        const response = await this.fetch('/organizations/'+org_id+'/projects/'+project_id+'/prompts/'+prompt_id, {
+            method: 'GET'
+        });
+
+        if (!response.ok) throw new Error('Failed to get prompt');
+        return response.json();
+    }
+
+    async createPrompt(org_id : string, project_id: string, data: PromptCreateDTO): Promise<{}> {
+        const response = await this.fetch('/organizations/'+org_id+'/projects/'+project_id+'/prompts', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) throw new Error('Failed to create api key');
+        return response.json();
+    }
+
+    
+    async updatePrompt(org_id : string, project_id: string, promptId: string, data: PromptCreateDTO): Promise<{}> {
+        const response = await this.fetch('/organizations/'+org_id+'/projects/'+project_id+'/prompts/' + promptId, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) throw new Error('Failed to update prompt');
+        return response.json();
+    }
+
+    async deletePrompt(org_id : string, project_id: string, promptId: string): Promise<{}> {
+        const response = await this.fetch('/organizations/'+org_id+'/projects/'+project_id+'/prompts/' + promptId, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) throw new Error('Failed to delete prompt');
+        return response.json();
+    }
+
+    async executePrompt(org_id : string, project_id: string, promptName: string, parameters: ExecutePromptParameters ): Promise<{}> {
+        const response = await this.fetch('/proxy/organizations/'+org_id+'/projects/'+project_id+'/execute/' + promptName, {
+            method: 'POST',
+            body: JSON.stringify(parameters)
+        });
+
+
+        if (!response.ok) throw new Error('Failed to execute prompt');
+        return response.json();
+    }
+
+    async getPromptExecutions(org_id : string, project_id: string, prompt_id: string, page: number = 1): Promise<{}> {
+        const response = await this.fetch('/proxy/organizations/'+org_id+'/projects/'+project_id+'/prompts/'+prompt_id+'/executions?page=' + page, {
+            method: 'GET'
+        });
+
+        if (!response.ok) throw new Error('Failed to get prompt executions');
         return response.json();
     }
 }

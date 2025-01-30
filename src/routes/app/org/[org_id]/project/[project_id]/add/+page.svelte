@@ -1,9 +1,16 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
-	import { api, type ApiKeyDTO } from '$lib/api.js';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { api, type ApiKeyDTO, type PromptCreateDTO } from '$lib/api.js';
 
 	export let data;
-	console.log(data);
+	let promptData: PromptCreateDTO = {};
+
+	async function createPrompt() {
+		const response = await api.createPrompt(data.organization_id, data.project._id, promptData);
+		if (response) {
+			goto(`/app/org/${data.organization_id}/project/${data.project._id}`, { invalidateAll: true });
+		}
+	}
 </script>
 
 <div id="project-details">
@@ -25,19 +32,20 @@
 
 	<div class="mb-8 rounded-lg border border-gray-800 bg-gray-900 p-6 shadow-lg">
 		<h2 class="mb-4 text-xl font-semibold text-gray-100">Create a New Prompt</h2>
-		<form id="create-prompt-form" class="flex items-center space-x-4">
+		<div id="create-prompt-form" class="flex items-center space-x-4">
 			<input
 				type="text"
 				id="new-prompt-name"
 				class="flex-1 rounded-lg border border-gray-700 bg-gray-800 p-2 text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
 				placeholder="Enter prompt name"
+				bind:value={promptData.name}
 				required
 			/>
 			<button
-				type="submit"
+				on:click={createPrompt}
 				class="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
 				>Create</button
 			>
-		</form>
+		</div>
 	</div>
 </div>
