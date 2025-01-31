@@ -1,7 +1,6 @@
 <script lang="ts">
 	export let data;
 	let userDropdownVisible: boolean = false;
-	console.log(data);
 </script>
 
 <div class="flex min-h-screen">
@@ -30,19 +29,21 @@
 				<span class="nav-text">Dashboard</span>
 			</a>
 			<a
-				href="#"
+				href="/app/org/{data.organization_id}"
 				class="block flex items-center rounded-lg px-4 py-2 text-gray-300 hover:bg-gray-800"
 			>
 				<i class="fas fa-folder mr-2"></i>
 				<span class="nav-text">Projects</span>
 			</a>
-			<a
-				href="#"
-				class="block flex items-center rounded-lg px-4 py-2 text-gray-300 hover:bg-gray-800"
-			>
-				<i class="fas fa-cog mr-2"></i>
-				<span class="nav-text">Settings</span>
-			</a>
+			{#if data.role === 'admin'}
+				<a
+					href="/app/org/{data.organization_id}/admin/users"
+					class="block flex items-center rounded-lg px-4 py-2 text-gray-300 hover:bg-gray-800"
+				>
+					<i class="fas fa-cog mr-2"></i>
+					<span class="nav-text">Users</span>
+				</a>
+			{/if}
 		</nav>
 	</div>
 

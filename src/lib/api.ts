@@ -108,6 +108,11 @@ class ApiClient {
             throw new Error('Unauthorized');
         }
 
+        if (response.status === 403) {
+            goto('/app');
+            throw new Error('Unauthorized');
+        }
+
         return response;
     }
 
@@ -131,6 +136,12 @@ class ApiClient {
 
     async getUserOrganizations(): Promise<Organization[]> {
         const response = await this.fetch('/organizations');
+        if (!response.ok) throw new Error('Failed to fetch organizations');
+        return response.json();
+    }
+
+    async getOrganization(org_id: string): Promise<Organization> {
+        const response = await this.fetch('/organizations/'+org_id);
         if (!response.ok) throw new Error('Failed to fetch organizations');
         return response.json();
     }
@@ -238,6 +249,25 @@ class ApiClient {
         });
 
         if (!response.ok) throw new Error('Failed to get prompt executions');
+        return response.json();
+    }
+
+    async inviteUserToOrg(orgId: string, email: string, role: 'admin' | 'member' | 'viewer'): Promise<{}> {
+        const response = await this.fetch(`/organizations/${orgId}/members`, {
+            method: 'POST',
+            body: JSON.stringify({ email, role }),
+        });
+
+        if (!response.ok) throw new Error('Failed to invite user to organization');
+        return response.json();
+    }
+
+    async deleteUserFromOrg(orgId: string, user_id: string, ): Promise<{}> {
+        const response = await this.fetch(`/organizations/${orgId}/members/${user_id}`, {
+            method: 'Delete',
+        });
+
+        if (!response.ok) throw new Error('Failed to delete user to organization');
         return response.json();
     }
 }

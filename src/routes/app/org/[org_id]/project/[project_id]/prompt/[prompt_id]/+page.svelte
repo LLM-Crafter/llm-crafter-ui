@@ -7,6 +7,7 @@
 	let provider;
 	let variableMatches = [];
 	let variableValues: { [key: string]: string } = {};
+	let isTesting: boolean = false;
 	let testResult: string = 'No output yet';
 	let testPrice: string = '';
 	let promptExecutions: Array<any> = [];
@@ -57,6 +58,9 @@
 	}
 
 	async function testPrompt() {
+		isTesting = true;
+		testResult = 'No output yet';
+		testPrice = '';
 		const response = await api.executePrompt(
 			data.organization_id,
 			data.project._id,
@@ -66,7 +70,10 @@
 		if (response) {
 			testResult = response.result;
 			testPrice = response.usage.cost;
+		} else {
+			testResult = 'Error executing prompt';
 		}
+		isTesting = false;
 	}
 
 	async function getPromptExecutions() {
@@ -315,9 +322,24 @@
 			<!-- Dynamically populated variable inputs -->
 		</div>
 		<button
-			class="w-full rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-			on:click={testPrompt}>Run Test</button
+			class="flex w-full items-center rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+			class:disabled={isTesting}
+			on:click={testPrompt}
 		>
+			{#if isTesting}
+				<svg
+					class="h-6 w-6 animate-spin text-white"
+					xmlns="http://www.w3.org/2000/svg"
+					fill="none"
+					viewBox="0 0 24 24"
+				>
+					<path class="opacity-1" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+					></path>
+				</svg> Testing...
+			{:else}
+				Run Test
+			{/if}
+		</button>
 		<div id="test-output" class="mt-6 rounded-lg border border-gray-700 bg-gray-800 p-4">
 			<h3 class="mb-2 text-lg font-semibold">Output</h3>
 			<p class="text-gray-300" id="output-text">{testResult}</p>
