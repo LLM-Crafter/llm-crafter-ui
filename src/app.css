@@ -3,17 +3,34 @@
 @import 'tailwindcss/utilities';
 
 body {
-    font-family: 'Inter', sans-serif;
-  }
-  /* Sidebar transition */
-  #sidebar {
-    transition: width 0.3s ease;
-  }
-  /* Hide text when sidebar is collapsed */
-  #sidebar.collapsed .nav-text {
-    display: none;
-  }
-  /* Show text on hover when collapsed */
-  #sidebar.collapsed:hover .nav-text {
-    display: inline;
-  }
+	font-family: 'Inter', sans-serif;
+}
+/* Sidebar transition */
+#sidebar {
+	transition: width 0.3s ease;
+}
+/* Hide text when sidebar is collapsed */
+#sidebar.collapsed .nav-text {
+	display: none;
+}
+/* Show text on hover when collapsed */
+#sidebar.collapsed:hover .nav-text {
+	display: inline;
+}
+
+/* Line clamp utilities */
+.line-clamp-2 {
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.line-clamp-3 {
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}

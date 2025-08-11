@@ -147,7 +147,7 @@
 						<label class="mb-2 block text-gray-300">Default Model</label>
 						<select
 							name="model"
-							bind:value={formData.llm_settings?.model}
+							bind:value={formData.llm_settings.model}
 							class="w-full rounded-lg border border-gray-700 bg-gray-800 p-3 text-gray-300 focus:outline-none focus:ring-2 focus:ring-sky-400"
 						>
 							<option value="">Select model...</option>
@@ -173,11 +173,7 @@
 						min={item.min}
 						max={item.max}
 						step={item.step}
-						bind:value={
-							formData.llm_settings?.parameters?.[
-								item.key as keyof typeof formData.llm_settings.parameters
-							]
-						}
+						bind:value={formData.llm_settings.parameters[item.key]}
 					/>
 				</div>
 			{/each}
