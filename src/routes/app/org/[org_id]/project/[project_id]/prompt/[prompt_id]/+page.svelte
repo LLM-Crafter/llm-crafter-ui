@@ -2,6 +2,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { api, type PromptUpdateDTO } from '$lib/api.js';
+	import TestPromptModal from '$lib/ui/modal/TestPromptModal.svelte';
 
 	import Prism from 'prismjs';
 	import 'prismjs/components/prism-markup.js';
@@ -9,12 +10,8 @@
 
 	export let data;
 	let isTestModalOpen = false;
-	let provider;
-	let variableMatches = [];
-	let variableValues: { [key: string]: string } = {};
-	let isTesting = false;
-	let testResult: string = 'No output yet';
-	let testPrice: string = '';
+	let provider: any;
+	let variableMatches: string[] = [];
 	let promptExecutions: Array<any> = [];
 	let totalPages = 0;
 	let page = 1;
@@ -27,11 +24,10 @@
 	$: highlighted = Prism.highlight(promptContent, Prism.languages.markup, 'markup');
 	$: if (formData.content) variableMatches = formData.content.match(/{{\s*[\w]+\s*}}/g) || [];
 	$: {
-		for (const match of variableMatches) {
-			const variableName = match.replace(/{{\s*|\s*}}/g, '');
-			if (!variableValues[variableName]) {
-				variableValues[variableName] = '';
-			}
+		if (typeof formData.api_key === 'string') {
+			provider = (data.project as any).apiKeys?.find(
+				(api_key: any) => api_key._id == formData.api_key
+			)?.provider;
 		}
 	}
 	let formData: PromptUpdateDTO = {
@@ -49,47 +45,25 @@
 		}
 	};
 	$: formData.content = promptContent;
-	$: if (typeof formData.api_key === 'string') {
-		provider = data.project.apiKeys.find((api_key) => api_key._id == formData.api_key)?.provider;
-	}
 	async function updatePrompt() {
 		const response = await api.updatePrompt(
-			data.organization_id,
+			data.organization_id || '',
 			data.project._id,
 			data.prompt._id,
 			formData
 		);
 		if (response) invalidateAll();
 	}
-	async function testPrompt() {
-		isTesting = true;
-		testResult = 'No output yet';
-		testPrice = '';
-
-		const response = await api.testPrompt({
-			content: promptContent || '',
-			llm_settings: formData.llm_settings,
-			api_key_id: formData.api_key,
-			variables: variableValues
-		});
-		if (response) {
-			testResult = response.result;
-			testPrice = response.usage.cost;
-		} else {
-			testResult = 'Error executing prompt';
-		}
-		isTesting = false;
-	}
 	async function getPromptExecutions() {
 		const response = await api.getPromptExecutions(
-			data.organization_id,
+			data.organization_id || '',
 			data.project._id,
 			data.prompt._id,
 			page
 		);
 		if (response) {
-			promptExecutions = response.executions;
-			totalPages = Math.round(response.total / response.limit);
+			promptExecutions = (response as any).executions;
+			totalPages = Math.round((response as any).total / (response as any).limit);
 		}
 	}
 	onMount(() => {
@@ -163,7 +137,7 @@
 						class="w-full rounded-lg border border-gray-700 bg-gray-800 p-3 text-gray-300 focus:outline-none focus:ring-2 focus:ring-sky-400"
 					>
 						<option value="">Select key...</option>
-						{#each data.project.apiKeys as api_key}
+						{#each (data.project as any).apiKeys as api_key}
 							<option value={api_key._id}>{api_key.name}</option>
 						{/each}
 					</select>
@@ -173,7 +147,7 @@
 						<label class="mb-2 block text-gray-300">Default Model</label>
 						<select
 							name="model"
-							bind:value={formData.llm_settings.model}
+							bind:value={formData.llm_settings?.model}
 							class="w-full rounded-lg border border-gray-700 bg-gray-800 p-3 text-gray-300 focus:outline-none focus:ring-2 focus:ring-sky-400"
 						>
 							<option value="">Select model...</option>
@@ -199,7 +173,11 @@
 						min={item.min}
 						max={item.max}
 						step={item.step}
-						bind:value={formData.llm_settings.parameters[item.key]}
+						bind:value={
+							formData.llm_settings?.parameters?.[
+								item.key as keyof typeof formData.llm_settings.parameters
+							]
+						}
 					/>
 				</div>
 			{/each}
@@ -330,62 +308,11 @@
 </section>
 
 <!-- Test Prompt Modal -->
-<div
-	class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 text-white"
-	class:hidden={!isTestModalOpen}
->
-	<div class="w-full max-w-2xl rounded-xl border border-gray-800 bg-gray-900 p-6 shadow-2xl">
-		<h2 class="mb-4 text-xl font-bold">Test Prompt</h2>
-		<div id="variables-section" class="mb-4">
-			<h3 class="mb-2 text-lg font-semibold text-gray-100">Input Variables</h3>
-			{#each variableMatches as variable}
-				<div class="mb-2">
-					<label class="mb-1 block text-gray-300">{variable}</label>
-					<input
-						type="text"
-						id="variable-{variable}"
-						class="w-full rounded-lg border border-gray-700 bg-gray-800 p-2 text-gray-300 focus:outline-none focus:ring-2 focus:ring-sky-400"
-						placeholder="Enter value for {variable}"
-						bind:value={variableValues[variable.replace(/{{\s*|\s*}}/g, '')]}
-					/>
-				</div>
-			{/each}
-		</div>
-		<button
-			class="flex w-full items-center justify-center rounded-lg bg-sky-600 px-4 py-2 text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-400"
-			class:disabled={isTesting}
-			on:click={testPrompt}
-		>
-			{#if isTesting}
-				<svg
-					class="mr-2 h-6 w-6 animate-spin"
-					xmlns="http://www.w3.org/2000/svg"
-					fill="none"
-					viewBox="0 0 24 24"
-				>
-					<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
-					></circle>
-					<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-				</svg>
-				Testing...
-			{:else}
-				Run Test
-			{/if}
-		</button>
-		<div class="mt-6 rounded-lg border border-gray-700 bg-gray-800 p-4">
-			<h3 class="mb-2 text-lg font-semibold">Output</h3>
-			<p class="break-words text-gray-300" id="output-text">{testResult}</p>
-		</div>
-		{#if testPrice != ''}
-			<div class="mt-6 flex justify-between rounded-lg border border-gray-700 bg-gray-800 p-2">
-				<h3 class="mb-2 text-lg font-semibold">Price</h3>
-				<p class="text-gray-300" id="output-text">{testPrice} $</p>
-			</div>
-		{/if}
-		<button
-			on:click={() => (isTestModalOpen = false)}
-			class="mt-4 w-full rounded-lg bg-gray-700 px-4 py-2 text-gray-300 hover:bg-gray-600"
-			>Close</button
-		>
-	</div>
-</div>
+<TestPromptModal
+	bind:isOpen={isTestModalOpen}
+	{variableMatches}
+	{promptContent}
+	apiKey={formData.api_key}
+	{provider}
+	on:close={() => (isTestModalOpen = false)}
+/>
