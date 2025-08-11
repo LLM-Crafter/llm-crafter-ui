@@ -340,9 +340,12 @@
 				Run Test
 			{/if}
 		</button>
-		<div id="test-output" class="mt-6 rounded-lg border border-gray-700 bg-gray-800 p-4">
+		<div
+			id="test-output"
+			class="mt-6 max-h-80 overflow-auto rounded-lg border border-gray-700 bg-gray-800 p-4"
+		>
 			<h3 class="mb-2 text-lg font-semibold">Output</h3>
-			<p class="text-gray-300" id="output-text">{testResult}</p>
+			<p class=" text-gray-300" id="output-text">{testResult}</p>
 		</div>
 
 		{#if testPrice != ''}
