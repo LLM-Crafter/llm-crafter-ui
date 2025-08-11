@@ -4,10 +4,10 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 
-	let email = '';
-	let password = '';
-	let error = '';
-	let loading = false;
+	let email: string = '';
+	let password: string = '';
+	let error: string = '';
+	let loading: boolean = false;
 
 	onMount(() => {
 		if ($token) {
@@ -24,8 +24,8 @@
 			token.set(authToken);
 			console.log($token);
 			goto('/app');
-		} catch (err) {
-			error = err.message;
+		} catch (err: any) {
+			error = err?.message;
 		} finally {
 			loading = false;
 		}
@@ -80,7 +80,9 @@
 		</div>
 		<div class="mt-6 text-center">
 			<p class="text-sm text-gray-400">
-				Don't have an account? <a href="#" class="text-blue-400 hover:text-blue-300">Sign Up</a>
+				Don't have an account? <a href="/register" class="text-blue-400 hover:text-blue-300"
+					>Sign Up</a
+				>
 			</p>
 		</div>
 	</div>

@@ -83,11 +83,11 @@
 						class="flex items-center space-x-2 rounded-lg border border-gray-800 bg-gray-900 px-4 py-2 text-gray-100 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
 					>
 						<img
-							src={`https://ui-avatars.com/api/?name=${data.user.name}&bold=true`}
+							src={`https://ui-avatars.com/api/?name=${data.user?.name}&bold=true`}
 							alt="User Avatar"
 							class="h-8 w-8 rounded-full"
 						/>
-						<span>{data.user.name}</span>
+						<span>{data.user?.name}</span>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							class="h-5 w-5 text-gray-400"
