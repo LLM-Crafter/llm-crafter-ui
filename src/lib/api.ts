@@ -51,7 +51,8 @@ export interface PromptUpdateDTO {
 	api_key?: string;
 	description?: string;
 	content?: string;
-	llm_settings?: LLMSettings;
+	system_prompt?: string;
+	llm_settings: LLMSettings;
 }
 
 export interface CreateOrganizationDTO {
@@ -61,7 +62,7 @@ export interface CreateOrganizationDTO {
 
 export interface LLMSettings {
 	model?: string;
-	parameters?: {
+	parameters: {
 		temperature?: number;
 		max_tokens?: number;
 		top_p?: number;
@@ -75,6 +76,7 @@ export interface Prompt {
 	name: string;
 	description?: string;
 	content?: string;
+	system_prompt?: string;
 	project: string;
 	version?: number;
 	api_key?: string;
@@ -91,6 +93,7 @@ export interface ExecutePromptParameters {
 
 export interface TestPromptParameters {
 	content: string;
+	system_prompt?: string;
 	llm_settings: {
 		model: string;
 		parameters?: { [key: string]: any };
@@ -257,7 +260,7 @@ class ApiClient {
 		org_id: string,
 		project_id: string,
 		promptId: string,
-		data: PromptCreateDTO
+		data: PromptUpdateDTO
 	): Promise<{}> {
 		const response = await this.fetch(
 			'/organizations/' + org_id + '/projects/' + project_id + '/prompts/' + promptId,

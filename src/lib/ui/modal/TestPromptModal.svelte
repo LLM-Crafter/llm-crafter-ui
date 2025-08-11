@@ -6,6 +6,7 @@
 	export let isOpen = false;
 	export let variableMatches: string[] = [];
 	export let promptContent: string = '';
+	export let systemPrompt: string = '';
 	export let apiKey: string = '';
 	export let provider: any = null;
 	export let selectedModels: string[] = [];
@@ -64,6 +65,7 @@
 			try {
 				const parameters: TestPromptParameters = {
 					content: promptContent,
+					system_prompt: systemPrompt,
 					llm_settings: {
 						model: model,
 						parameters: llmSettings.parameters
@@ -152,6 +154,16 @@
 								/>
 							</div>
 						{/each}
+					</div>
+				</div>
+			{/if}
+
+			<!-- System Prompt Preview -->
+			{#if systemPrompt && systemPrompt.trim()}
+				<div class="mb-6">
+					<h3 class="mb-3 text-lg font-semibold text-purple-300">System Prompt</h3>
+					<div class="rounded-lg border border-purple-600/30 bg-purple-900/20 p-4">
+						<p class="whitespace-pre-wrap text-sm text-gray-300">{systemPrompt}</p>
 					</div>
 				</div>
 			{/if}

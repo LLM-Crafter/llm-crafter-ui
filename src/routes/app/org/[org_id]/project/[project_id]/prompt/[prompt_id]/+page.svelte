@@ -32,15 +32,16 @@
 	}
 	let formData: PromptUpdateDTO = {
 		content: data.prompt.content,
+		system_prompt: data.prompt.system_prompt || '',
 		api_key: data.prompt.api_key,
 		llm_settings: {
-			model: data.prompt.llm_settings?.model,
+			model: data.prompt.llm_settings?.model || '',
 			parameters: {
-				temperature: data.prompt.llm_settings?.parameters?.temperature,
-				max_tokens: data.prompt.llm_settings?.parameters?.max_tokens,
-				top_p: data.prompt.llm_settings?.parameters?.top_p,
-				frequency_penalty: data.prompt.llm_settings?.parameters?.frequency_penalty,
-				presence_penalty: data.prompt.llm_settings?.parameters?.presence_penalty
+				temperature: data.prompt.llm_settings?.parameters?.temperature || 0.7,
+				max_tokens: data.prompt.llm_settings?.parameters?.max_tokens || 100,
+				top_p: data.prompt.llm_settings?.parameters?.top_p || 1.0,
+				frequency_penalty: data.prompt.llm_settings?.parameters?.frequency_penalty || 0.0,
+				presence_penalty: data.prompt.llm_settings?.parameters?.presence_penalty || 0.0
 			}
 		}
 	};
@@ -116,6 +117,31 @@
 				</div>
 			</div>
 			<div>
+				<div class="mb-2 flex items-center gap-2">
+					<svg class="h-5 w-5 text-purple-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+					</svg>
+					<label class="text-sm font-medium text-purple-300" for="system-prompt-text">System Prompt</label>
+					<span class="ml-auto rounded-full bg-purple-900/50 px-2 py-1 text-xs text-purple-300">Optional</span>
+				</div>
+				<textarea
+					id="system-prompt-text"
+					class="mb-2 w-full rounded-lg border border-purple-600/30 bg-gray-800 p-3 font-mono text-gray-200 placeholder-gray-500 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/50"
+					rows="4"
+					bind:value={formData.system_prompt}
+					placeholder="You are a helpful assistant. Provide clear, accurate, and concise responses..."
+					spellcheck="false"
+				></textarea>
+				<p class="mb-4 text-xs text-gray-500">
+					<span class="inline-flex items-center gap-1">
+						<svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+						</svg>
+						The system prompt sets the AI's role, behavior, and response format.
+					</span>
+				</p>
+			</div>
+			<div>
 				<label class="mb-1 block text-sm text-gray-400" for="prompt-text">Prompt template</label>
 				<textarea
 					id="prompt-text"
@@ -173,7 +199,7 @@
 						min={item.min}
 						max={item.max}
 						step={item.step}
-						bind:value={formData.llm_settings.parameters[item.key]}
+						bind:value={formData.llm_settings.parameters[item.key as keyof typeof formData.llm_settings.parameters]}
 					/>
 				</div>
 			{/each}
@@ -308,6 +334,7 @@
 	bind:isOpen={isTestModalOpen}
 	{variableMatches}
 	{promptContent}
+	systemPrompt={formData.system_prompt || ''}
 	apiKey={formData.api_key}
 	{provider}
 	on:close={() => (isTestModalOpen = false)}
