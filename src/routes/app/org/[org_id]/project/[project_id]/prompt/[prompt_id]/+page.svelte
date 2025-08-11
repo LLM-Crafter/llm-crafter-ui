@@ -118,11 +118,25 @@
 			</div>
 			<div>
 				<div class="mb-2 flex items-center gap-2">
-					<svg class="h-5 w-5 text-purple-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+					<svg
+						class="h-5 w-5 text-purple-400"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+						></path>
 					</svg>
-					<label class="text-sm font-medium text-purple-300" for="system-prompt-text">System Prompt</label>
-					<span class="ml-auto rounded-full bg-purple-900/50 px-2 py-1 text-xs text-purple-300">Optional</span>
+					<label class="text-sm font-medium text-purple-300" for="system-prompt-text"
+						>System Prompt</label
+					>
+					<span class="ml-auto rounded-full bg-purple-900/50 px-2 py-1 text-xs text-purple-300"
+						>Optional</span
+					>
 				</div>
 				<textarea
 					id="system-prompt-text"
@@ -134,8 +148,18 @@
 				></textarea>
 				<p class="mb-4 text-xs text-gray-500">
 					<span class="inline-flex items-center gap-1">
-						<svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+						<svg
+							class="h-3 w-3"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+							></path>
 						</svg>
 						The system prompt sets the AI's role, behavior, and response format.
 					</span>
@@ -199,7 +223,11 @@
 						min={item.min}
 						max={item.max}
 						step={item.step}
-						bind:value={formData.llm_settings.parameters[item.key as keyof typeof formData.llm_settings.parameters]}
+						bind:value={
+							formData.llm_settings.parameters[
+								item.key as keyof typeof formData.llm_settings.parameters
+							]
+						}
 					/>
 				</div>
 			{/each}
