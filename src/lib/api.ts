@@ -361,6 +361,119 @@ class ApiClient {
 		return response.json();
 	}
 
+	// Agent management methods
+	async getAgents(orgId: string, projectId: string) {
+		const response = await this.fetch(`/organizations/${orgId}/projects/${projectId}/agents`);
+		if (!response.ok) throw new Error('Failed to fetch agents');
+		return response.json();
+	}
+
+	async getAgent(orgId: string, projectId: string, agentId: string) {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/agents/${agentId}`
+		);
+		if (!response.ok) throw new Error('Failed to fetch agent');
+		return response.json();
+	}
+
+	async createAgent(orgId: string, projectId: string, agentData: any) {
+		const response = await this.fetch(`/organizations/${orgId}/projects/${projectId}/agents`, {
+			method: 'POST',
+			body: JSON.stringify(agentData)
+		});
+		if (!response.ok) throw new Error('Failed to create agent');
+		return response.json();
+	}
+
+	async updateAgent(orgId: string, projectId: string, agentId: string, agentData: any) {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/agents/${agentId}`,
+			{
+				method: 'PUT',
+				body: JSON.stringify(agentData)
+			}
+		);
+		if (!response.ok) throw new Error('Failed to update agent');
+		return response.json();
+	}
+
+	async deleteAgent(orgId: string, projectId: string, agentId: string) {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/agents/${agentId}`,
+			{
+				method: 'DELETE'
+			}
+		);
+		if (!response.ok) throw new Error('Failed to delete agent');
+		return response.json();
+	}
+
+	async executeAgent(orgId: string, projectId: string, agentId: string, executionData: any) {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/agents/${agentId}/execute`,
+			{
+				method: 'POST',
+				body: JSON.stringify(executionData)
+			}
+		);
+		if (!response.ok) throw new Error('Failed to execute agent');
+		return response.json();
+	}
+
+	async chatWithAgent(orgId: string, projectId: string, agentId: string, chatData: any) {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/agents/${agentId}/chat`,
+			{
+				method: 'POST',
+				body: JSON.stringify(chatData)
+			}
+		);
+		if (!response.ok) throw new Error('Failed to chat with agent');
+		return response.json();
+	}
+
+	async getAgentConversations(orgId: string, projectId: string, agentId: string) {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/agents/${agentId}/conversations`
+		);
+		if (!response.ok) throw new Error('Failed to fetch conversations');
+		return response.json();
+	}
+
+	async getAgentExecutions(orgId: string, projectId: string, agentId: string) {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/agents/${agentId}/executions`
+		);
+		if (!response.ok) throw new Error('Failed to fetch executions');
+		return response.json();
+	}
+
+	// API Endpoint Configuration Methods
+	async getAgentApiConfig(orgId: string, projectId: string, agentId: string) {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/agents/${agentId}/api-config`
+		);
+		if (!response.ok) throw new Error('Failed to fetch API configuration');
+		return response.json();
+	}
+
+	async configureAgentApiEndpoints(
+		orgId: string,
+		projectId: string,
+		agentId: string,
+		configData: any
+	) {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/agents/${agentId}/api-config`,
+			{
+				method: 'POST',
+				body: JSON.stringify(configData)
+			}
+		);
+		if (!response.ok) throw new Error('Failed to configure API endpoints');
+		return response.json();
+	}
+
 	async register(name: string, email: string, password: string) {
 		const response = await this.fetch('/auth/register', {
 			method: 'POST',

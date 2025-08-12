@@ -75,10 +75,17 @@
 				</div>
 				<div>
 					<h1 class="text-3xl font-bold text-gray-100">{data.project.name}</h1>
-					<p class="text-gray-400">Manage your AI prompts and templates</p>
+					<p class="text-gray-400">Manage your AI prompts, templates, and intelligent agents</p>
 				</div>
 			</div>
 			<div class="flex space-x-3">
+				<a
+					href="/app/org/{data.organization_id}/project/{data.project._id}/agents"
+					class="flex items-center space-x-2 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-gray-300 transition-all hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+				>
+					<i class="fas fa-robot"></i>
+					<span>AI Agents</span>
+				</a>
 				<a
 					href="/app/org/{data.organization_id}/project/{data.project._id}/config"
 					class="flex items-center space-x-2 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-gray-300 transition-all hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -102,6 +109,28 @@
 			<i class="fas fa-chevron-right text-xs"></i>
 			<span class="text-gray-200">{data.project.name}</span>
 		</nav>
+	</div>
+
+	<!-- Navigation Tabs -->
+	<div class="mb-8">
+		<div class="border-b border-gray-800">
+			<nav class="-mb-px flex space-x-8">
+				<a
+					href="/app/org/{data.organization_id}/project/{data.project._id}"
+					class="flex items-center space-x-2 border-b-2 border-blue-500 px-1 py-4 text-sm font-medium text-blue-400"
+				>
+					<i class="fas fa-magic"></i>
+					<span>Prompts</span>
+				</a>
+				<a
+					href="/app/org/{data.organization_id}/project/{data.project._id}/agents"
+					class="flex items-center space-x-2 border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-400 hover:border-gray-600 hover:text-gray-300"
+				>
+					<i class="fas fa-robot"></i>
+					<span>AI Agents</span>
+				</a>
+			</nav>
+		</div>
 	</div>
 
 	<!-- Statistics Cards -->
