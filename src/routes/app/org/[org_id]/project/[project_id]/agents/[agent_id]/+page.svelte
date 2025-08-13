@@ -337,7 +337,7 @@
 							<div class="flex items-center justify-between">
 								<div>
 									<p class="text-sm text-gray-400">Conversations</p>
-									<p class="text-2xl font-bold text-blue-400">{conversations.length}</p>
+									<p class="text-2xl font-bold text-blue-400">{conversations?.total}</p>
 								</div>
 								<i class="fas fa-comments text-blue-400"></i>
 							</div>
@@ -395,7 +395,7 @@
 
 			<div class="p-6">
 				{#if agent.type === 'chatbot'}
-					{#if conversations.length === 0}
+					{#if conversations?.total === 0}
 						<div class="py-16 text-center">
 							<div
 								class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-500/10"
@@ -416,11 +416,11 @@
 						</div>
 					{:else}
 						<div class="space-y-4">
-							<!-- {#each conversations.slice(0, 10) || [] as conversation}
+							{#each conversations?.conversations || [] as conversation}
 								<div class="rounded-lg border border-gray-700 bg-gray-800 p-4">
 									<div class="flex items-center justify-between">
 										<div>
-											<h4 class="font-medium text-gray-100">Conversation #{conversation.id}</h4>
+											<h4 class="font-medium text-gray-100">Conversation - {conversation.title}</h4>
 											<p class="text-sm text-gray-400">
 												{conversation.messages?.length || 0} messages • {formatDate(
 													conversation.updatedAt
@@ -430,11 +430,11 @@
 										<button
 											class="rounded-lg bg-indigo-600 px-3 py-1 text-sm text-white hover:bg-indigo-700"
 										>
-											View
+											Cost - {conversation.metadata.total_cost || 'N/A'} $
 										</button>
 									</div>
 								</div>
-							{/each} -->
+							{/each}
 						</div>
 					{/if}
 				{:else if executions.length === 0}

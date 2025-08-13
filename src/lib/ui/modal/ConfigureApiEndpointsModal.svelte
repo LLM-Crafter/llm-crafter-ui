@@ -16,6 +16,14 @@
 		type: 'bearer_token',
 		config: {}
 	};
+	let summarization = {
+		enabled: false,
+		model: 'gpt-3.5-turbo',
+		max_tokens: 150,
+		min_size: 1000,
+		focus: 'key information relevant to user queries',
+		endpoint_rules: {} as Record<string, any>
+	};
 	let showAddEndpoint = false;
 
 	// New endpoint form
@@ -25,7 +33,11 @@
 		path: '',
 		methods: ['GET'],
 		headers: {} as Record<string, string>,
-		description: ''
+		description: '',
+		summarization_rules: {
+			max_tokens: undefined as number | undefined,
+			focus: '' as string
+		}
 	};
 
 	// Authentication types
@@ -50,6 +62,14 @@
 				type: config.authentication?.type || 'bearer_token',
 				config: config.authentication?.config || {}
 			};
+			summarization = {
+				enabled: config.summarization?.enabled || false,
+				model: config.summarization?.model || 'gpt-3.5-turbo',
+				max_tokens: config.summarization?.max_tokens || 150,
+				min_size: config.summarization?.min_size || 1000,
+				focus: config.summarization?.focus || 'key information relevant to user queries',
+				endpoint_rules: config.summarization?.endpoint_rules || {}
+			};
 		} catch (err: any) {
 			console.error('Failed to load API configuration:', err);
 		} finally {
@@ -64,7 +84,8 @@
 
 			const configData = {
 				endpoints,
-				authentication
+				authentication,
+				summarization
 			};
 
 			await api.configureAgentApiEndpoints(
@@ -104,6 +125,21 @@
 				}
 			};
 
+			// Add endpoint-specific summarization rules if configured
+			if (
+				newEndpoint.summarization_rules.max_tokens ||
+				newEndpoint.summarization_rules.focus.trim()
+			) {
+				const rules: any = {};
+				if (newEndpoint.summarization_rules.max_tokens) {
+					rules.max_tokens = newEndpoint.summarization_rules.max_tokens;
+				}
+				if (newEndpoint.summarization_rules.focus.trim()) {
+					rules.focus = newEndpoint.summarization_rules.focus.trim();
+				}
+				summarization.endpoint_rules[newEndpoint.name] = rules;
+			}
+
 			// Save the entire configuration
 			await saveConfiguration();
 			resetNewEndpoint();
@@ -120,6 +156,13 @@
 
 		const { [endpointName]: deleted, ...rest } = endpoints;
 		endpoints = rest;
+
+		// Also remove endpoint-specific summarization rules
+		if (summarization.endpoint_rules[endpointName]) {
+			const { [endpointName]: deletedRule, ...restRules } = summarization.endpoint_rules;
+			summarization.endpoint_rules = restRules;
+		}
+
 		saveConfiguration();
 	}
 
@@ -130,7 +173,11 @@
 			path: '',
 			methods: ['GET'],
 			headers: {},
-			description: ''
+			description: '',
+			summarization_rules: {
+				max_tokens: undefined,
+				focus: ''
+			}
 		};
 	}
 
@@ -194,8 +241,10 @@
 						<i class="fas fa-plug text-white"></i>
 					</div>
 					<div>
-						<h2 class="text-xl font-bold text-white">Configure API Endpoints</h2>
-						<p class="text-sm text-gray-400">Manage API endpoints for {agent.name}</p>
+						<h2 class="text-xl font-bold text-white">Configure API Endpoints & Summarization</h2>
+						<p class="text-sm text-gray-400">
+							Manage API endpoints and response summarization for {agent.name}
+						</p>
 					</div>
 				</div>
 				<button
@@ -367,6 +416,116 @@
 				</div>
 			</div>
 
+			<!-- Summarization Configuration -->
+			<div class="mb-8">
+				<h3 class="mb-4 text-lg font-semibold text-gray-100">Response Summarization</h3>
+				<div class="rounded-lg border border-gray-700 bg-gray-800 p-6">
+					<div class="mb-4">
+						<label class="flex items-center space-x-3">
+							<input
+								type="checkbox"
+								bind:checked={summarization.enabled}
+								disabled={loading}
+								class="h-4 w-4 rounded border-gray-600 bg-gray-700 text-indigo-600 focus:ring-2 focus:ring-indigo-500"
+							/>
+							<span class="text-sm font-medium text-gray-300">Enable response summarization</span>
+						</label>
+						<p class="mt-1 text-xs text-gray-500">
+							Automatically summarize API responses to reduce token usage and improve context
+							management
+						</p>
+					</div>
+
+					{#if summarization.enabled}
+						<div class="space-y-4">
+							<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+								<div>
+									<label class="mb-2 block text-sm font-medium text-gray-300" for="summ-model">
+										Summarization Model
+									</label>
+									<select
+										id="summ-model"
+										bind:value={summarization.model}
+										disabled={loading}
+										class="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-3 text-gray-100 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+									>
+										<option value="gpt-4.1-nano">GPT-4.1 Nano</option>
+										<option value="gpt-4.1-mini">GPT-4.1 Mini</option>
+									</select>
+								</div>
+
+								<div>
+									<label class="mb-2 block text-sm font-medium text-gray-300" for="summ-max-tokens">
+										Max Summary Tokens
+									</label>
+									<input
+										id="summ-max-tokens"
+										type="number"
+										min="50"
+										max="500"
+										bind:value={summarization.max_tokens}
+										disabled={loading}
+										class="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-3 text-gray-100 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+									/>
+								</div>
+							</div>
+
+							<div>
+								<label class="mb-2 block text-sm font-medium text-gray-300" for="summ-min-size">
+									Minimum Response Size (characters)
+								</label>
+								<input
+									id="summ-min-size"
+									type="number"
+									min="100"
+									max="10000"
+									bind:value={summarization.min_size}
+									disabled={loading}
+									class="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-3 text-gray-100 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+								/>
+								<p class="mt-1 text-xs text-gray-500">
+									Only responses longer than this will be summarized
+								</p>
+							</div>
+
+							<div>
+								<label class="mb-2 block text-sm font-medium text-gray-300" for="summ-focus">
+									Summarization Focus
+								</label>
+								<textarea
+									id="summ-focus"
+									bind:value={summarization.focus}
+									placeholder="key information relevant to user queries"
+									rows="2"
+									disabled={loading}
+									class="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-3 text-gray-100 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+								></textarea>
+								<p class="mt-1 text-xs text-gray-500">
+									Tell the summarizer what to focus on when creating summaries
+								</p>
+							</div>
+						</div>
+					{/if}
+
+					<div class="mt-6 flex justify-end">
+						<button
+							type="button"
+							on:click={saveConfiguration}
+							disabled={loading}
+							class="inline-flex items-center space-x-2 rounded-lg bg-indigo-600 px-4 py-2 text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+						>
+							{#if loading}
+								<i class="fas fa-spinner fa-spin"></i>
+								<span>Saving...</span>
+							{:else}
+								<i class="fas fa-save"></i>
+								<span>Save Summarization</span>
+							{/if}
+						</button>
+					</div>
+				</div>
+			</div>
+
 			<!-- Existing Endpoints -->
 			<div class="mb-8">
 				<div class="mb-4 flex items-center justify-between">
@@ -422,6 +581,26 @@
 													{#each Object.entries(endpoint.headers) as [headerKey, headerValue]}
 														<p class="text-xs text-gray-500">{headerKey}: {headerValue}</p>
 													{/each}
+												</div>
+											</div>
+										{/if}
+										{#if summarization.endpoint_rules[name]}
+											<div class="mt-2">
+												<div class="flex items-center space-x-2">
+													<span
+														class="inline-flex items-center rounded-md bg-purple-500/20 px-2 py-1 text-xs font-medium text-purple-400"
+													>
+														<i class="fas fa-magic mr-1"></i>
+														Custom Summarization
+													</span>
+												</div>
+												<div class="ml-2 mt-1 text-xs text-gray-500">
+													{#if summarization.endpoint_rules[name].max_tokens}
+														<p>Max tokens: {summarization.endpoint_rules[name].max_tokens}</p>
+													{/if}
+													{#if summarization.endpoint_rules[name].focus}
+														<p>Focus: {summarization.endpoint_rules[name].focus}</p>
+													{/if}
 												</div>
 											</div>
 										{/if}
@@ -577,6 +756,56 @@
 								<p class="text-sm text-gray-500">No custom headers configured</p>
 							{/if}
 						</div>
+
+						<!-- Endpoint-Specific Summarization Rules -->
+						{#if summarization.enabled}
+							<div>
+								<h4 class="mb-3 text-sm font-medium text-gray-300">
+									Endpoint-Specific Summarization Rules
+								</h4>
+								<p class="mb-3 text-xs text-gray-500">
+									Override global summarization settings for this endpoint (optional)
+								</p>
+
+								<div class="space-y-4">
+									<div>
+										<label
+											class="mb-2 block text-sm font-medium text-gray-300"
+											for="endpoint-summ-tokens"
+										>
+											Max Summary Tokens (override)
+										</label>
+										<input
+											id="endpoint-summ-tokens"
+											type="number"
+											min="50"
+											max="500"
+											bind:value={newEndpoint.summarization_rules.max_tokens}
+											placeholder="Leave empty to use global setting"
+											disabled={loading}
+											class="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-3 text-gray-100 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+										/>
+									</div>
+
+									<div>
+										<label
+											class="mb-2 block text-sm font-medium text-gray-300"
+											for="endpoint-summ-focus"
+										>
+											Focus Override
+										</label>
+										<textarea
+											id="endpoint-summ-focus"
+											bind:value={newEndpoint.summarization_rules.focus}
+											placeholder="Leave empty to use global focus setting"
+											rows="2"
+											disabled={loading}
+											class="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-3 text-gray-100 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+										></textarea>
+									</div>
+								</div>
+							</div>
+						{/if}
 					</div>
 
 					<!-- Form Actions -->
