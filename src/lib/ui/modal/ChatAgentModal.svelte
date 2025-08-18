@@ -10,6 +10,9 @@
 	let currentMessage = '';
 	let loading = false;
 	let conversationId = null;
+	let showContextForm = false;
+	let contextInput = '';
+	let contextError = '';
 
 	function getToolIcon(toolId) {
 		switch (toolId) {
@@ -52,10 +55,24 @@
 	async function sendMessage() {
 		if (!currentMessage.trim() || loading) return;
 
+		// Parse context if provided
+		let context = null;
+		contextError = '';
+
+		if (contextInput.trim()) {
+			try {
+				context = JSON.parse(contextInput);
+			} catch (error) {
+				contextError = 'Invalid JSON format in context field';
+				return;
+			}
+		}
+
 		const userMessage = {
 			role: 'user',
 			content: currentMessage,
-			timestamp: new Date()
+			timestamp: new Date(),
+			context: context
 		};
 
 		messages = [...messages, userMessage];
@@ -64,11 +81,23 @@
 		loading = true;
 
 		try {
-			const response = await api.chatWithAgent(data.organization_id, data.project._id, agent._id, {
+			const requestBody: any = {
 				message: messageToSend,
 				user_identifier: 'user-123', // In a real app, this would be the actual user ID
 				conversation_id: conversationId
-			});
+			};
+
+			// Add context if provided
+			if (context) {
+				requestBody.context = context;
+			}
+
+			const response = await api.chatWithAgent(
+				data.organization_id,
+				data.project._id,
+				agent._id,
+				requestBody
+			);
 
 			if (response.conversation_id && !conversationId) {
 				conversationId = response.conversation_id;
@@ -109,6 +138,26 @@
 			minute: '2-digit'
 		});
 	}
+
+	function toggleContextForm() {
+		showContextForm = !showContextForm;
+		contextError = '';
+	}
+
+	function setExampleContext() {
+		contextInput = JSON.stringify(
+			{
+				current_datetime: new Date().toISOString(),
+				user_session_id: 'session_abc123',
+				user_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+				user_location: 'Unknown',
+				company_name: 'Acme Corp'
+			},
+			null,
+			2
+		);
+		contextError = '';
+	}
 </script>
 
 <!-- BACKDROP -->
@@ -133,6 +182,7 @@
 			<button
 				on:click={() => dispatch('close')}
 				class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-300"
+				aria-label="Close modal"
 			>
 				<i class="fas fa-times"></i>
 			</button>
@@ -157,6 +207,19 @@
 							{#if message.role === 'user'}
 								<div class="rounded-lg bg-indigo-600 px-4 py-2 text-white">
 									<p class="whitespace-pre-wrap">{message.content}</p>
+									{#if message.context}
+										<div class="mt-2 rounded bg-indigo-700/50 px-3 py-2">
+											<div class="mb-1 flex items-center space-x-1">
+												<i class="fas fa-cog text-xs"></i>
+												<span class="text-xs font-medium">Context provided</span>
+											</div>
+											<!-- <pre class="whitespace-pre-wrap text-xs text-indigo-200">{JSON.stringify(
+													message.context,
+													null,
+													2
+												)}</pre> -->
+										</div>
+									{/if}
 									<p class="mt-1 text-xs text-indigo-200">{formatTime(message.timestamp)}</p>
 								</div>
 							{:else if message.role === 'assistant'}
@@ -238,6 +301,57 @@
 							</div>
 						</div>
 					</div>
+				</div>
+			{/if}
+		</div>
+
+		<!-- Context Form (Optional) -->
+		<div class="border-t border-gray-800">
+			<button
+				on:click={toggleContextForm}
+				class="flex w-full items-center justify-between px-4 py-3 text-left text-sm text-gray-400 transition-colors hover:bg-gray-800/50"
+			>
+				<div class="flex items-center space-x-2">
+					<i class="fas fa-cog"></i>
+					<span>Advanced: Add Context</span>
+					<span class="text-xs text-gray-500">(Optional)</span>
+				</div>
+				<i class="fas fa-chevron-{showContextForm ? 'up' : 'down'}"></i>
+			</button>
+
+			{#if showContextForm}
+				<div class="border-t border-gray-800 p-4">
+					<div class="mb-3 flex items-center justify-between">
+						<label for="context-input" class="text-sm font-medium text-gray-300"
+							>Context (JSON)</label
+						>
+						<button
+							on:click={setExampleContext}
+							class="text-xs text-indigo-400 hover:text-indigo-300"
+						>
+							Use Example
+						</button>
+					</div>
+
+					<textarea
+						id="context-input"
+						bind:value={contextInput}
+						placeholder="Enter JSON context (optional)"
+						rows="4"
+						class="w-full resize-none rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+					></textarea>
+
+					{#if contextError}
+						<p class="mt-2 text-xs text-red-400">
+							<i class="fas fa-exclamation-triangle mr-1"></i>
+							{contextError}
+						</p>
+					{/if}
+
+					<p class="mt-2 text-xs text-gray-500">
+						Provide additional context for the agent as a JSON object. This can include user
+						information, session data, or any relevant context.
+					</p>
 				</div>
 			{/if}
 		</div>

@@ -13,7 +13,7 @@
 	let name = agent.name || '';
 	let description = agent.description || '';
 	let systemPrompt = agent.system_prompt || '';
-	let apiKeyId = agent.api_key || '';
+	let apiKeyId = agent.api_key._id || '';
 	let temperature = agent.llm_settings?.parameters?.temperature || 0.7;
 	let maxTokens = agent.llm_settings?.parameters?.max_tokens || 1000;
 	let model = agent.llm_settings?.model || '';
