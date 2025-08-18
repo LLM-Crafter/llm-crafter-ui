@@ -149,6 +149,20 @@ class ApiClient {
 		return response.json();
 	}
 
+	async updateProfile(profileData: {
+		firstName?: string;
+		lastName?: string;
+		name?: string;
+		password: string;
+	}) {
+		const response = await this.fetch('/auth/profile', {
+			method: 'PUT',
+			body: JSON.stringify(profileData)
+		});
+		if (!response.ok) throw new Error('Failed to update profile');
+		return response.json();
+	}
+
 	async getUserOrganizations(): Promise<Organization[]> {
 		const response = await this.fetch('/organizations');
 		if (!response.ok) throw new Error('Failed to fetch organizations');

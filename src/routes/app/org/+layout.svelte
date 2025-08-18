@@ -1,10 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import ProfileModal from '$lib/ui/modal/ProfileModal.svelte';
+
 	export let data;
 	let userDropdownVisible: boolean = false;
 	let sidebarCollapsed: boolean = false;
 	let mobileMenuOpen: boolean = false;
 	let isMobile: boolean = false;
+	let showProfileModal: boolean = false;
 
 	$: orgName = data.organizations.find((obj) => obj._id == data.organization_id)?.name || '';
 	$: shortOrgName =
@@ -54,6 +57,21 @@
 		if (isMobile) {
 			mobileMenuOpen = false;
 		}
+	}
+
+	function openProfileModal() {
+		showProfileModal = true;
+		userDropdownVisible = false;
+	}
+
+	function closeProfileModal() {
+		showProfileModal = false;
+	}
+
+	function handleProfileUpdate(event: CustomEvent) {
+		// Update the user data locally
+		data.user = { ...data.user, ...event.detail };
+		closeProfileModal();
 	}
 </script>
 
@@ -251,6 +269,7 @@
 								<li>
 									<button
 										type="button"
+										on:click={openProfileModal}
 										class="flex w-full {isMobile
 											? 'px-3 py-2 text-sm'
 											: 'px-4 py-2'} text-left text-gray-300 hover:bg-gray-800">Profile</button
@@ -283,3 +302,8 @@
 		</div>
 	</div>
 </div>
+
+<!-- Profile Modal -->
+{#if showProfileModal}
+	<ProfileModal {data} on:close={closeProfileModal} on:updated={handleProfileUpdate} />
+{/if}
