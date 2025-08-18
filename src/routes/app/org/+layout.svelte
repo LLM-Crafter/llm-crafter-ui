@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import ProfileModal from '$lib/ui/modal/ProfileModal.svelte';
 
 	export let data;
@@ -8,6 +9,7 @@
 	let mobileMenuOpen: boolean = false;
 	let isMobile: boolean = false;
 	let showProfileModal: boolean = false;
+	let orgDropdownVisible: boolean = false;
 
 	$: orgName = data.organizations.find((obj) => obj._id == data.organization_id)?.name || '';
 	$: shortOrgName =
@@ -34,6 +36,9 @@
 			const target = event.target as Element;
 			if (!target.closest('#profile-menu') && !target.closest('#profile-dropdown')) {
 				userDropdownVisible = false;
+			}
+			if (!target.closest('#org-switcher') && !target.closest('#org-dropdown')) {
+				orgDropdownVisible = false;
 			}
 		};
 
@@ -72,6 +77,19 @@
 		// Update the user data locally
 		data.user = { ...data.user, ...event.detail };
 		closeProfileModal();
+	}
+
+	function switchOrganization() {
+		// Clear auto-redirect preference and go back to organization picker
+		localStorage.removeItem('autoRedirectToOrg');
+		orgDropdownVisible = false;
+		goto('/app');
+	}
+
+	function toggleOrgDropdown() {
+		orgDropdownVisible = !orgDropdownVisible;
+		// Close user dropdown if open
+		userDropdownVisible = false;
 	}
 </script>
 
@@ -209,15 +227,22 @@
 					<div class="relative">
 						<button
 							id="org-switcher"
+							on:click={toggleOrgDropdown}
 							class="flex items-center space-x-2 rounded-lg border border-gray-800 bg-gray-900 {isMobile
 								? 'px-2 py-1.5'
-								: 'px-4 py-2'} text-gray-100 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+								: 'px-4 py-2'} text-gray-100 transition-colors duration-200 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+							title="Organization options"
 						>
+							<i class="fas fa-building {isMobile ? 'text-xs' : 'text-sm'} text-gray-400"></i>
 							<span class="hidden sm:inline {isMobile ? 'text-sm' : ''}">{orgName}</span>
 							<span class="sm:hidden {isMobile ? 'text-sm' : ''}">{shortOrgName}</span>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
-								class="{isMobile ? 'h-4 w-4' : 'h-5 w-5'} text-gray-400"
+								class="{isMobile
+									? 'h-4 w-4'
+									: 'h-5 w-5'} text-gray-400 transition-transform duration-200 {orgDropdownVisible
+									? 'rotate-180'
+									: ''}"
 								viewBox="0 0 20 20"
 								fill="currentColor"
 							>
@@ -228,6 +253,60 @@
 								/>
 							</svg>
 						</button>
+
+						<!-- Organization Dropdown -->
+						<div
+							id="org-dropdown"
+							class:hidden={!orgDropdownVisible}
+							class="absolute right-0 mt-2 {isMobile
+								? 'w-48'
+								: 'w-56'} z-50 rounded-lg border border-gray-800 bg-gray-900 shadow-lg backdrop-blur-sm"
+						>
+							<div class="py-2">
+								<!-- Current Organization Info -->
+								<div class="border-b border-gray-800 px-4 py-2">
+									<div class="flex items-center space-x-3">
+										<div
+											class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-sm font-bold text-white"
+										>
+											{orgName.charAt(0).toUpperCase()}
+										</div>
+										<div class="min-w-0 flex-1">
+											<p class="truncate text-sm font-medium text-gray-100">{orgName}</p>
+											<p class="text-xs text-gray-400">Current organization</p>
+										</div>
+									</div>
+								</div>
+
+								<!-- Actions -->
+								<div class="py-1">
+									<button
+										type="button"
+										on:click={switchOrganization}
+										class="flex w-full items-center {isMobile
+											? 'px-3 py-2 text-sm'
+											: 'px-4 py-2'} text-left text-gray-300 transition-colors duration-200 hover:bg-gray-800"
+									>
+										<i
+											class="fas fa-exchange-alt {isMobile
+												? 'text-xs'
+												: 'text-sm'} mr-3 text-gray-400"
+										></i>
+										<span>Switch Organization</span>
+									</button>
+
+									<button
+										type="button"
+										class="flex w-full items-center {isMobile
+											? 'px-3 py-2 text-sm'
+											: 'px-4 py-2'} text-left text-gray-300 transition-colors duration-200 hover:bg-gray-800"
+									>
+										<i class="fas fa-cog {isMobile ? 'text-xs' : 'text-sm'} mr-3 text-gray-400"></i>
+										<span>Organization Settings</span>
+									</button>
+								</div>
+							</div>
+						</div>
 					</div>
 
 					<!-- User Profile -->
