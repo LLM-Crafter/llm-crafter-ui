@@ -3,6 +3,7 @@
 	import { api } from '$lib/api';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import ThemeToggle from '$lib/ui/ThemeToggle.svelte';
 
 	let email: string = '';
 	let password: string = '';
@@ -32,12 +33,17 @@
 	}
 </script>
 
-<div id="login-screen" class="flex min-h-screen items-center justify-center bg-gray-950">
-	<div class="w-96 rounded-lg border border-gray-800 bg-gray-900 p-8 shadow-lg">
-		<h1 class="mb-6 text-center text-3xl font-semibold text-gray-100">LLM Crafter</h1>
+<div id="login-screen" class="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
+	<!-- Theme Toggle -->
+	<div class="absolute top-4 right-4">
+		<ThemeToggle size="md" />
+	</div>
+	
+	<div class="w-96 rounded-lg border border-gray-200 bg-white p-8 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+		<h1 class="mb-6 text-center text-3xl font-semibold text-gray-800 dark:text-gray-100">LLM Crafter</h1>
 		<form on:submit|preventDefault={handleSubmit}>
 			<div class="mb-4">
-				<label for="email" class="mb-1 block text-sm font-medium text-gray-300"
+				<label for="email" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
 					>Email or Username</label
 				>
 				<input
@@ -47,11 +53,11 @@
 					required
 					disabled={loading}
 					placeholder="Enter your email or username"
-					class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-gray-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+					class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
 				/>
 			</div>
 			<div class="mb-6">
-				<label for="password" class="mb-1 block text-sm font-medium text-gray-300">Password</label>
+				<label for="password" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
 				<input
 					type="password"
 					id="password"
@@ -59,7 +65,7 @@
 					required
 					disabled={loading}
 					placeholder="Enter your password"
-					class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-gray-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+					class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
 				/>
 			</div>
 			<button
@@ -76,11 +82,11 @@
 			{/if}
 		</form>
 		<div class="mt-4 text-center">
-			<a href="#" class="text-sm text-blue-400 hover:text-blue-300">Forgot password?</a>
+			<a href="#" class="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">Forgot password?</a>
 		</div>
 		<div class="mt-6 text-center">
-			<p class="text-sm text-gray-400">
-				Don't have an account? <a href="/register" class="text-blue-400 hover:text-blue-300"
+			<p class="text-sm text-gray-600 dark:text-gray-400">
+				Don't have an account? <a href="/register" class="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
 					>Sign Up</a
 				>
 			</p>

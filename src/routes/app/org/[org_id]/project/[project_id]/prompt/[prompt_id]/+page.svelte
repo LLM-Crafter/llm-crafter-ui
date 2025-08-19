@@ -2,6 +2,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { api, type PromptUpdateDTO } from '$lib/api.js';
+	import { theme } from '$lib/stores/theme';
 	import TestPromptModal from '$lib/ui/modal/TestPromptModal.svelte';
 
 	import Prism from 'prismjs';
@@ -82,12 +83,12 @@
 <section class="mx-auto w-full px-2 py-10 sm:px-4">
 	<!-- Top Bar -->
 	<div class="mb-8 flex flex-col items-start justify-between sm:flex-row sm:items-center">
-		<h1 class="mb-4 text-3xl font-bold text-white sm:mb-0">
-			Edit Prompt: <span class="text-sky-300">{data.prompt.name}</span>
+		<h1 class="mb-4 text-3xl font-bold text-gray-900 dark:text-white sm:mb-0">
+			Edit Prompt: <span class="text-blue-600 dark:text-sky-300">{data.prompt.name}</span>
 		</h1>
 		<a
 			href="/app/org/{data.organization_id}/project/{data.project._id}"
-			class="rounded-lg bg-gray-700 px-4 py-2 text-gray-300 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+			class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
 			>Back to Prompts</a
 		>
 	</div>
@@ -95,23 +96,23 @@
 	<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 		<!-- Prompt Editor -->
 		<div
-			class="flex flex-col gap-6 rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg lg:col-span-2"
+			class="flex flex-col gap-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-lg dark:border-gray-700 dark:bg-gray-800 lg:col-span-2"
 		>
 			<div
 				class="mb-2 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between"
 			>
-				<h3 class="text-xl font-semibold text-white">Prompt Editor</h3>
+				<h3 class="text-xl font-semibold text-gray-900 dark:text-white">Prompt Editor</h3>
 				<div class="flex gap-2">
 					<button
-						class="rounded border border-sky-800 bg-gray-800 px-3 py-1 text-xs text-sky-300 hover:bg-sky-900"
+						class="rounded border border-blue-300 bg-blue-50 px-3 py-1 text-xs text-blue-700 hover:bg-blue-100 dark:border-sky-700 dark:bg-sky-900/50 dark:text-sky-300 dark:hover:bg-sky-800"
 						on:click={() => copyAs('cURL')}>Copy as cURL</button
 					>
 					<button
-						class="rounded border border-green-800 bg-gray-800 px-3 py-1 text-xs text-green-300 hover:bg-green-900"
+						class="rounded border border-green-300 bg-green-50 px-3 py-1 text-xs text-green-700 hover:bg-green-100 dark:border-green-700 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-800"
 						on:click={() => copyAs('JSON')}>Copy as JSON</button
 					>
 					<button
-						class="rounded border border-purple-800 bg-gray-800 px-3 py-1 text-xs text-purple-300 hover:bg-purple-900"
+						class="rounded border border-purple-300 bg-purple-50 px-3 py-1 text-xs text-purple-700 hover:bg-purple-100 dark:border-purple-700 dark:bg-purple-900/50 dark:text-purple-300 dark:hover:bg-purple-800"
 						on:click={() => copyAs('Code')}>Copy as Code</button
 					>
 				</div>
@@ -119,7 +120,7 @@
 			<div>
 				<div class="mb-2 flex items-center gap-2">
 					<svg
-						class="h-5 w-5 text-purple-400"
+						class="h-5 w-5 text-purple-600 dark:text-purple-400"
 						fill="none"
 						stroke="currentColor"
 						stroke-width="2"
@@ -131,22 +132,22 @@
 							d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
 						></path>
 					</svg>
-					<label class="text-sm font-medium text-purple-300" for="system-prompt-text"
+					<label class="text-sm font-medium text-purple-700 dark:text-purple-300" for="system-prompt-text"
 						>System Prompt</label
 					>
-					<span class="ml-auto rounded-full bg-purple-900/50 px-2 py-1 text-xs text-purple-300"
+					<span class="ml-auto rounded-full bg-purple-100 px-2 py-1 text-xs text-purple-700 dark:bg-purple-900/50 dark:text-purple-300"
 						>Optional</span
 					>
 				</div>
 				<textarea
 					id="system-prompt-text"
-					class="mb-2 w-full rounded-lg border border-purple-600/30 bg-gray-800 p-3 font-mono text-gray-200 placeholder-gray-500 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/50"
+					class="mb-2 w-full rounded-lg border border-purple-200 bg-white p-3 font-mono text-gray-900 placeholder-gray-500 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400/50 dark:border-purple-600/30 dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
 					rows="4"
 					bind:value={formData.system_prompt}
 					placeholder="You are a helpful assistant. Provide clear, accurate, and concise responses..."
 					spellcheck="false"
 				></textarea>
-				<p class="mb-4 text-xs text-gray-500">
+				<p class="mb-4 text-xs text-gray-500 dark:text-gray-400">
 					<span class="inline-flex items-center gap-1">
 						<svg
 							class="h-3 w-3"
@@ -166,25 +167,25 @@
 				</p>
 			</div>
 			<div>
-				<label class="mb-1 block text-sm text-gray-400" for="prompt-text">Prompt template</label>
+				<label class="mb-1 block text-sm text-gray-700 dark:text-gray-400" for="prompt-text">Prompt template</label>
 				<textarea
 					id="prompt-text"
-					class="mb-2 w-full rounded-lg border border-gray-700 bg-gray-800 p-3 font-mono text-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-400"
+					class="mb-2 w-full rounded-lg border border-gray-300 bg-white p-3 font-mono text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
 					rows="7"
 					bind:value={promptContent}
 					spellcheck="false"
 				></textarea>
-				<label class="text-xs text-gray-400">Preview with syntax highlighting:</label>
+				<label class="text-xs text-gray-600 dark:text-gray-400">Preview with syntax highlighting:</label>
 				<pre
-					class="mt-1 overflow-x-auto rounded border border-gray-800 bg-[#232531] p-3 font-mono text-xs"
+					class="mt-1 overflow-x-auto rounded border border-gray-300 bg-gray-50 p-3 font-mono text-xs dark:border-gray-600 dark:bg-gray-800"
 					tabindex="0"><code class="language-markup">{@html highlighted}</code></pre>
 			</div>
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 				<div>
-					<label class="mb-2 block text-gray-300">Default API Key</label>
+					<label class="mb-2 block text-gray-700 dark:text-gray-300">Default API Key</label>
 					<select
 						bind:value={formData.api_key}
-						class="w-full rounded-lg border border-gray-700 bg-gray-800 p-3 text-gray-300 focus:outline-none focus:ring-2 focus:ring-sky-400"
+						class="w-full rounded-lg border border-gray-300 bg-white p-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
 					>
 						<option value="">Select key...</option>
 						{#each (data.project as any).apiKeys as api_key}
@@ -194,11 +195,11 @@
 				</div>
 				{#if provider}
 					<div>
-						<label class="mb-2 block text-gray-300">Default Model</label>
+						<label class="mb-2 block text-gray-700 dark:text-gray-300">Default Model</label>
 						<select
 							name="model"
 							bind:value={formData.llm_settings.model}
-							class="w-full rounded-lg border border-gray-700 bg-gray-800 p-3 text-gray-300 focus:outline-none focus:ring-2 focus:ring-sky-400"
+							class="w-full rounded-lg border border-gray-300 bg-white p-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
 						>
 							<option value="">Select model...</option>
 							{#each provider.models as model}
@@ -211,14 +212,14 @@
 		</div>
 
 		<!-- LLM Settings -->
-		<div class="flex flex-col rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-lg">
-			<h3 class="mb-4 text-xl font-semibold text-white">LLM Settings</h3>
+		<div class="flex flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+			<h3 class="mb-4 text-xl font-semibold text-gray-900 dark:text-white">LLM Settings</h3>
 			{#each [{ label: 'Temperature', key: 'temperature', min: 0, max: 1, step: 0.1, placeholder: '0.7' }, { label: 'Max Tokens', key: 'max_tokens', min: 1, max: undefined, step: 1, placeholder: '100' }, { label: 'Top P', key: 'top_p', min: 0, max: 1, step: 0.01, placeholder: '1.0' }, { label: 'Frequency Penalty', key: 'frequency_penalty', min: 0, max: 2, step: 0.01, placeholder: '0.0' }, { label: 'Presence Penalty', key: 'presence_penalty', min: 0, max: 2, step: 0.01, placeholder: '0.0' }] as item}
 				<div class="mb-4">
-					<label class="mb-2 block text-gray-300">{item.label}</label>
+					<label class="mb-2 block text-gray-700 dark:text-gray-300">{item.label}</label>
 					<input
 						type="number"
-						class="w-full rounded-lg border border-gray-700 bg-gray-800 p-2 text-gray-300 focus:outline-none focus:ring-2 focus:ring-sky-400"
+						class="w-full rounded-lg border border-gray-300 bg-white p-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
 						placeholder={item.placeholder}
 						min={item.min}
 						max={item.max}
@@ -233,7 +234,7 @@
 			{/each}
 			<button
 				on:click={() => (isTestModalOpen = true)}
-				class="mt-4 w-full rounded-lg bg-sky-600 px-4 py-2 text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-400"
+				class="mt-4 w-full rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
 				>Test Prompt</button
 			>
 		</div>
@@ -246,8 +247,8 @@
 				class="mb-2 flex cursor-pointer select-none items-center gap-3"
 				on:click={() => (executionHistoryCollapsed = !executionHistoryCollapsed)}
 			>
-				<span class="text-lg font-semibold text-white">Execution History</span>
-				<span class="rounded bg-gray-800 px-2 text-xs text-gray-200">
+				<span class="text-lg font-semibold text-gray-900 dark:text-white">Execution History</span>
+				<span class="rounded bg-gray-200 px-2 text-xs text-gray-700 dark:bg-gray-700 dark:text-gray-300">
 					{promptExecutions.length} results
 				</span>
 				<svg
@@ -260,42 +261,42 @@
 				>
 					<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
 				</svg>
-				<span class="text-xs text-gray-400">{executionHistoryCollapsed ? '(show)' : '(hide)'}</span>
+				<span class="text-xs text-gray-600 dark:text-gray-400">{executionHistoryCollapsed ? '(show)' : '(hide)'}</span>
 			</div>
 			<div class={executionHistoryCollapsed ? 'hidden' : ''}>
-				<div class="overflow-x-auto rounded-xl border border-gray-800 bg-gray-900 p-2 shadow-lg">
+				<div class="overflow-x-auto rounded-xl border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800">
 					<table class="w-full border-collapse text-left text-sm">
 						<thead>
 							<tr>
-								<th class="border-b border-gray-800 p-3 font-semibold text-gray-200">Status</th>
-								<th class="border-b border-gray-800 p-3 font-semibold text-gray-200">Date/Time</th>
-								<th class="border-b border-gray-800 p-3 font-semibold text-gray-200"
+								<th class="border-b border-gray-200 p-3 font-semibold text-gray-800 dark:border-gray-700 dark:text-gray-200">Status</th>
+								<th class="border-b border-gray-200 p-3 font-semibold text-gray-800 dark:border-gray-700 dark:text-gray-200">Date/Time</th>
+								<th class="border-b border-gray-200 p-3 font-semibold text-gray-800 dark:border-gray-700 dark:text-gray-200"
 									>Finish Reason</th
 								>
-								<th class="border-b border-gray-800 p-3 font-semibold text-gray-200">Price</th>
-								<th class="border-b border-gray-800 p-3 font-semibold text-gray-200">Model</th>
+								<th class="border-b border-gray-200 p-3 font-semibold text-gray-800 dark:border-gray-700 dark:text-gray-200">Price</th>
+								<th class="border-b border-gray-200 p-3 font-semibold text-gray-800 dark:border-gray-700 dark:text-gray-200">Model</th>
 							</tr>
 						</thead>
 						<tbody>
 							{#each promptExecutions as execution}
 								<tr>
 									<td
-										class="border-b border-gray-800 p-3
-                                    {execution.status === 'success' ? 'text-green-500' : ''}
-                                    {execution.status === 'error' ? 'text-red-500' : ''}
-                                    {execution.status === 'cached' ? 'text-gray-300' : ''}"
+										class="border-b border-gray-200 p-3 dark:border-gray-700
+                                    {execution.status === 'success' ? 'text-green-600 dark:text-green-400' : ''}
+                                    {execution.status === 'error' ? 'text-red-600 dark:text-red-400' : ''}
+                                    {execution.status === 'cached' ? 'text-gray-700 dark:text-gray-300' : ''}"
 										>{execution.status}</td
 									>
-									<td class="border-b border-gray-800 p-3 text-gray-200"
+									<td class="border-b border-gray-200 p-3 text-gray-800 dark:border-gray-700 dark:text-gray-200"
 										>{new Date(execution.createdAt).toLocaleString()}</td
 									>
-									<td class="border-b border-gray-800 p-3 text-gray-200"
+									<td class="border-b border-gray-200 p-3 text-gray-800 dark:border-gray-700 dark:text-gray-200"
 										>{execution.metadata.finish_reason}</td
 									>
-									<td class="border-b border-gray-800 p-3 text-gray-200"
+									<td class="border-b border-gray-200 p-3 text-gray-800 dark:border-gray-700 dark:text-gray-200"
 										>{execution.usage.cost} $</td
 									>
-									<td class="border-b border-gray-800 p-3 text-gray-200"
+									<td class="border-b border-gray-200 p-3 text-gray-800 dark:border-gray-700 dark:text-gray-200"
 										>{execution.metadata.model}</td
 									>
 								</tr>
@@ -311,12 +312,12 @@
 										page -= 1;
 										getPromptExecutions();
 									}}
-									class="rounded-lg bg-gray-700 px-4 py-2 text-gray-300 hover:bg-gray-600"
+									class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
 									>Previous</button
 								>
 							{/if}
 						</div>
-						<span class="text-gray-300">Page {page} of {totalPages}</span>
+						<span class="text-gray-700 dark:text-gray-300">Page {page} of {totalPages}</span>
 						<div>
 							{#if page < totalPages}
 								<button
@@ -324,7 +325,7 @@
 										page += 1;
 										getPromptExecutions();
 									}}
-									class="rounded-lg bg-gray-700 px-4 py-2 text-gray-300 hover:bg-gray-600"
+									class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
 									>Next</button
 								>
 							{/if}
@@ -350,7 +351,7 @@
 	<!-- Copy as Modal/Toast -->
 	{#if showCopyMenu}
 		<div
-			class="fixed bottom-28 right-10 z-50 animate-bounce rounded-xl border border-gray-700 bg-gray-800 px-5 py-2 text-white shadow-xl"
+			class="fixed bottom-28 right-10 z-50 animate-bounce rounded-xl border border-gray-300 bg-white px-5 py-2 text-gray-900 shadow-xl dark:border-gray-600 dark:bg-gray-800 dark:text-white"
 		>
 			Copied <span class="font-semibold">{copyType}</span> placeholder to clipboard!
 		</div>

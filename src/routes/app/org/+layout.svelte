@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import ProfileModal from '$lib/ui/modal/ProfileModal.svelte';
+	import ThemeToggle from '$lib/ui/ThemeToggle.svelte';
 
 	export let data;
 	let userDropdownVisible: boolean = false;
@@ -93,7 +94,7 @@
 	}
 </script>
 
-<div class="flex min-h-screen">
+<div class="flex min-h-screen bg-gray-50 dark:bg-gray-900">
 	<!-- Mobile overlay -->
 	{#if isMobile && mobileMenuOpen}
 		<div
@@ -108,7 +109,7 @@
 	<!-- Sidebar -->
 	<div
 		id="sidebar"
-		class="border-r border-gray-800 bg-gray-900 transition-all duration-300 ease-in-out
+		class="border-r border-gray-200 bg-white transition-all duration-300 ease-in-out dark:border-gray-800 dark:bg-gray-900
 			{isMobile
 			? `fixed inset-y-0 left-0 z-50 w-64 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`
 			: `relative ${sidebarCollapsed ? 'w-16' : 'w-64'}`}"
@@ -120,7 +121,7 @@
 				on:click={toggleSidebar}
 				class="absolute {sidebarCollapsed && !isMobile
 					? '-right-3'
-					: 'right-4'} top-6 z-10 rounded-full bg-gray-800 p-2 text-gray-400 hover:bg-gray-700 hover:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+					: 'right-4'} top-6 z-10 rounded-full bg-gray-100 p-2 text-gray-600 hover:bg-gray-200 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
 				aria-label={isMobile
 					? 'Toggle mobile menu'
 					: sidebarCollapsed
@@ -136,7 +137,7 @@
 
 			<!-- Logo -->
 			<h2
-				class="mb-6 flex items-center text-xl font-semibold text-gray-100 {sidebarCollapsed &&
+				class="mb-6 flex items-center text-xl font-semibold text-gray-800 dark:text-gray-100 {sidebarCollapsed &&
 				!isMobile
 					? 'justify-center'
 					: ''}"
@@ -151,7 +152,7 @@
 			<nav class="space-y-1">
 				<button
 					type="button"
-					class="flex w-full items-center rounded-lg px-4 py-2 text-gray-300 hover:bg-gray-800 {sidebarCollapsed &&
+					class="flex w-full items-center rounded-lg px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 {sidebarCollapsed &&
 					!isMobile
 						? 'justify-center'
 						: ''}"
@@ -164,7 +165,7 @@
 				</button>
 				<a
 					href="/app/org/{data.organization_id}"
-					class="flex items-center rounded-lg px-4 py-2 text-gray-300 hover:bg-gray-800 {sidebarCollapsed &&
+					class="flex items-center rounded-lg px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 {sidebarCollapsed &&
 					!isMobile
 						? 'justify-center'
 						: ''}"
@@ -178,7 +179,7 @@
 				{#if data.role === 'admin'}
 					<a
 						href="/app/org/{data.organization_id}/admin/users"
-						class="flex items-center rounded-lg px-4 py-2 text-gray-300 hover:bg-gray-800 {sidebarCollapsed &&
+						class="flex items-center rounded-lg px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 {sidebarCollapsed &&
 						!isMobile
 							? 'justify-center'
 							: ''}"
@@ -195,7 +196,7 @@
 	</div>
 
 	<!-- Main Content -->
-	<div class="min-w-0 flex-1 bg-gray-950 transition-all duration-300 ease-in-out">
+	<div class="min-w-0 flex-1 bg-gray-50 transition-all duration-300 ease-in-out dark:bg-gray-950">
 		<div class={isMobile ? 'p-4' : 'p-8'}>
 			<!-- Header -->
 			<header class="{isMobile ? 'mb-4' : 'mb-8'} flex items-center justify-between">
@@ -204,7 +205,7 @@
 					{#if isMobile}
 						<button
 							on:click={toggleSidebar}
-							class="rounded-md bg-gray-800 p-2 text-gray-400 hover:bg-gray-700 hover:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+							class="rounded-md bg-gray-200 p-2 text-gray-600 hover:bg-gray-300 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
 							aria-label="Open sidebar"
 						>
 							<i class="fas fa-bars"></i>
@@ -214,13 +215,13 @@
 					{#if !isMobile}
 						<button
 							on:click={toggleSidebar}
-							class="rounded-md bg-gray-800 p-2 text-gray-400 hover:bg-gray-700 hover:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 lg:hidden"
+							class="rounded-md bg-gray-200 p-2 text-gray-600 hover:bg-gray-300 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100 lg:hidden"
 							aria-label="Toggle sidebar"
 						>
 							<i class="fas fa-bars"></i>
 						</button>
 					{/if}
-					<h1 class="{isMobile ? 'text-xl' : 'text-2xl'} font-semibold text-gray-100">Projects</h1>
+					<h1 class="{isMobile ? 'text-xl' : 'text-2xl'} font-semibold text-gray-800 dark:text-gray-100">Projects</h1>
 				</div>
 				<div class="flex items-center {isMobile ? 'space-x-2' : 'space-x-4'}">
 					<!-- Organization Switcher -->
@@ -228,19 +229,19 @@
 						<button
 							id="org-switcher"
 							on:click={toggleOrgDropdown}
-							class="flex items-center space-x-2 rounded-lg border border-gray-800 bg-gray-900 {isMobile
+							class="flex items-center space-x-2 rounded-lg border border-gray-300 bg-white {isMobile
 								? 'px-2 py-1.5'
-								: 'px-4 py-2'} text-gray-100 transition-colors duration-200 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+								: 'px-4 py-2'} text-gray-800 transition-colors duration-200 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
 							title="Organization options"
 						>
-							<i class="fas fa-building {isMobile ? 'text-xs' : 'text-sm'} text-gray-400"></i>
+							<i class="fas fa-building {isMobile ? 'text-xs' : 'text-sm'} text-gray-500 dark:text-gray-400"></i>
 							<span class="hidden sm:inline {isMobile ? 'text-sm' : ''}">{orgName}</span>
 							<span class="sm:hidden {isMobile ? 'text-sm' : ''}">{shortOrgName}</span>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
 								class="{isMobile
 									? 'h-4 w-4'
-									: 'h-5 w-5'} text-gray-400 transition-transform duration-200 {orgDropdownVisible
+									: 'h-5 w-5'} text-gray-500 transition-transform duration-200 dark:text-gray-400 {orgDropdownVisible
 									? 'rotate-180'
 									: ''}"
 								viewBox="0 0 20 20"
@@ -260,11 +261,11 @@
 							class:hidden={!orgDropdownVisible}
 							class="absolute right-0 mt-2 {isMobile
 								? 'w-48'
-								: 'w-56'} z-50 rounded-lg border border-gray-800 bg-gray-900 shadow-lg backdrop-blur-sm"
+								: 'w-56'} z-50 rounded-lg border border-gray-200 bg-white shadow-lg backdrop-blur-sm dark:border-gray-700 dark:bg-gray-800"
 						>
 							<div class="py-2">
 								<!-- Current Organization Info -->
-								<div class="border-b border-gray-800 px-4 py-2">
+								<div class="border-b border-gray-200 px-4 py-2 dark:border-gray-700">
 									<div class="flex items-center space-x-3">
 										<div
 											class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-sm font-bold text-white"
@@ -272,8 +273,8 @@
 											{orgName.charAt(0).toUpperCase()}
 										</div>
 										<div class="min-w-0 flex-1">
-											<p class="truncate text-sm font-medium text-gray-100">{orgName}</p>
-											<p class="text-xs text-gray-400">Current organization</p>
+											<p class="truncate text-sm font-medium text-gray-800 dark:text-gray-100">{orgName}</p>
+											<p class="text-xs text-gray-500 dark:text-gray-400">Current organization</p>
 										</div>
 									</div>
 								</div>
@@ -285,12 +286,12 @@
 										on:click={switchOrganization}
 										class="flex w-full items-center {isMobile
 											? 'px-3 py-2 text-sm'
-											: 'px-4 py-2'} text-left text-gray-300 transition-colors duration-200 hover:bg-gray-800"
+											: 'px-4 py-2'} text-left text-gray-700 transition-colors duration-200 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
 									>
 										<i
 											class="fas fa-exchange-alt {isMobile
 												? 'text-xs'
-												: 'text-sm'} mr-3 text-gray-400"
+												: 'text-sm'} mr-3 text-gray-500 dark:text-gray-400"
 										></i>
 										<span>Switch Organization</span>
 									</button>
@@ -299,9 +300,9 @@
 										type="button"
 										class="flex w-full items-center {isMobile
 											? 'px-3 py-2 text-sm'
-											: 'px-4 py-2'} text-left text-gray-300 transition-colors duration-200 hover:bg-gray-800"
+											: 'px-4 py-2'} text-left text-gray-700 transition-colors duration-200 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
 									>
-										<i class="fas fa-cog {isMobile ? 'text-xs' : 'text-sm'} mr-3 text-gray-400"></i>
+										<i class="fas fa-cog {isMobile ? 'text-xs' : 'text-sm'} mr-3 text-gray-500 dark:text-gray-400"></i>
 										<span>Organization Settings</span>
 									</button>
 								</div>
@@ -314,9 +315,9 @@
 						<button
 							on:click={() => (userDropdownVisible = !userDropdownVisible)}
 							id="profile-menu"
-							class="flex items-center space-x-2 rounded-lg border border-gray-800 bg-gray-900 {isMobile
+							class="flex items-center space-x-2 rounded-lg border border-gray-300 bg-white {isMobile
 								? 'px-2 py-1.5'
-								: 'px-4 py-2'} text-gray-100 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+								: 'px-4 py-2'} text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
 						>
 							<img
 								src={`https://ui-avatars.com/api/?name=${data.user?.name}&bold=true`}
@@ -326,7 +327,7 @@
 							<span class="hidden sm:inline {isMobile ? 'text-sm' : ''}">{data.user?.name}</span>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
-								class="{isMobile ? 'h-4 w-4' : 'h-5 w-5'} text-gray-400"
+								class="{isMobile ? 'h-4 w-4' : 'h-5 w-5'} text-gray-500 dark:text-gray-400"
 								viewBox="0 0 20 20"
 								fill="currentColor"
 							>
@@ -342,7 +343,7 @@
 							class:hidden={!userDropdownVisible}
 							class="absolute right-0 mt-2 {isMobile
 								? 'w-40'
-								: 'w-48'} z-50 rounded-lg border border-gray-800 bg-gray-900 shadow-lg"
+								: 'w-48'} z-50 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
 						>
 							<ul class="py-2">
 								<li>
@@ -351,7 +352,7 @@
 										on:click={openProfileModal}
 										class="flex w-full {isMobile
 											? 'px-3 py-2 text-sm'
-											: 'px-4 py-2'} text-left text-gray-300 hover:bg-gray-800">Profile</button
+											: 'px-4 py-2'} text-left text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">Profile</button
 									>
 								</li>
 								<li>
@@ -359,16 +360,23 @@
 										type="button"
 										class="flex w-full {isMobile
 											? 'px-3 py-2 text-sm'
-											: 'px-4 py-2'} text-left text-gray-300 hover:bg-gray-800">Settings</button
+											: 'px-4 py-2'} text-left text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">Settings</button
 									>
 								</li>
-								<li>
+								<!-- Theme Toggle -->
+								<li class="border-t border-gray-200 pt-2 dark:border-gray-600">
+									<div class="flex items-center justify-between {isMobile ? 'px-3 py-2' : 'px-4 py-2'}">
+										<span class="text-gray-700 dark:text-gray-300 {isMobile ? 'text-sm' : ''}">Theme</span>
+										<ThemeToggle size="sm" />
+									</div>
+								</li>
+								<li class="border-t border-gray-200 pt-1 dark:border-gray-600">
 									<a
 										href="/logout"
 										data-sveltekit-reload
 										class="flex {isMobile
 											? 'px-3 py-2 text-sm'
-											: 'px-4 py-2'} text-red-500 hover:bg-gray-800">Log Out</a
+											: 'px-4 py-2'} text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700">Log Out</a
 									>
 								</li>
 							</ul>

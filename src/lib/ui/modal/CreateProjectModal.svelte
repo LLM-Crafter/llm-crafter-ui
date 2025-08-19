@@ -35,29 +35,29 @@
 <!-- BACKDROP -->
 <div class="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-70">
 	<!-- MODAL -->
-	<div class="w-full max-w-lg rounded-lg border border-gray-800 bg-gray-900 p-6 shadow-xl">
-		<h2 class="mb-4 text-xl font-bold text-white">Create Project</h2>
+	<div class="w-full max-w-lg rounded-lg border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-700 dark:bg-gray-800">
+		<h2 class="mb-4 text-xl font-bold text-gray-800 dark:text-white">Create Project</h2>
 
 		<form on:submit|preventDefault={createProject}>
 			<div class="mb-4">
-				<label class="mb-1 block text-sm text-gray-300" for="name">Name</label>
+				<label class="mb-1 block text-sm text-gray-700 dark:text-gray-300" for="name">Name</label>
 				<input
 					id="name"
 					type="text"
 					bind:value={name}
 					required
 					disabled={loading}
-					class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-gray-100 focus:ring-2 focus:ring-blue-500"
+					class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-800 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
 				/>
 			</div>
 			<div class="mb-4">
-				<label class="mb-1 block text-sm text-gray-300" for="description">Description</label>
+				<label class="mb-1 block text-sm text-gray-700 dark:text-gray-300" for="description">Description</label>
 				<textarea
 					id="description"
 					bind:value={description}
 					rows="3"
 					disabled={loading}
-					class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-gray-100 focus:ring-2 focus:ring-blue-500"
+					class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-800 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
 				></textarea>
 			</div>
 
@@ -68,7 +68,7 @@
 			<div class="flex justify-end gap-3">
 				<button
 					type="button"
-					class="rounded-lg bg-gray-700 px-4 py-2 text-gray-200 hover:bg-gray-600"
+					class="rounded-lg bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500"
 					on:click={() => dispatch('close')}
 					disabled={loading}
 				>

@@ -2,6 +2,7 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { api } from '$lib/api';
+	import ThemeToggle from '$lib/ui/ThemeToggle.svelte';
 
 	export let data;
 	let createModalVisible = false;
@@ -94,8 +95,13 @@
 
 <div
 	id="organization-screen"
-	class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-black"
+	class="min-h-screen bg-gradient-to-br from-gray-100 via-gray-200 to-gray-300 dark:from-gray-900 dark:via-gray-950 dark:to-black"
 >
+	<!-- Theme Toggle -->
+	<div class="absolute top-4 right-4 z-10">
+		<ThemeToggle size="md" />
+	</div>
+	
 	{#if isInitializing}
 		<!-- Loading State -->
 		<div class="flex min-h-screen items-center justify-center">
@@ -111,7 +117,7 @@
 						></path>
 					</svg>
 				</div>
-				<p class="text-lg text-gray-400">Loading organizations...</p>
+				<p class="text-lg text-gray-600 dark:text-gray-400">Loading organizations...</p>
 			</div>
 		</div>
 	{:else}
@@ -120,8 +126,8 @@
 			<div class="w-full max-w-4xl">
 				<!-- Header -->
 				<div class="mb-8 text-center">
-					<h1 class="mb-2 text-4xl font-bold text-white">Welcome Back!</h1>
-					<p class="text-lg text-gray-400">Choose your organization to continue</p>
+					<h1 class="mb-2 text-4xl font-bold text-gray-800 dark:text-white">Welcome Back!</h1>
+					<p class="text-lg text-gray-600 dark:text-gray-400">Choose your organization to continue</p>
 				</div>
 
 				<!-- Search Bar -->
@@ -132,10 +138,10 @@
 								type="text"
 								bind:value={searchQuery}
 								placeholder="Search organizations..."
-								class="w-full rounded-xl border border-gray-700 bg-gray-800/50 px-4 py-3 pl-10 text-gray-100 placeholder-gray-400 backdrop-blur-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+								class="w-full rounded-xl border border-gray-300 bg-white/50 px-4 py-3 pl-10 text-gray-800 placeholder-gray-500 backdrop-blur-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-800/50 dark:text-gray-100 dark:placeholder-gray-400"
 							/>
 							<svg
-								class="absolute left-3 top-3.5 h-5 w-5 text-gray-400"
+								class="absolute left-3 top-3.5 h-5 w-5 text-gray-500 dark:text-gray-400"
 								fill="none"
 								stroke="currentColor"
 								viewBox="0 0 24 24"
@@ -164,7 +170,7 @@
 							class="org-card group relative cursor-pointer overflow-hidden rounded-xl border transition-all duration-200
 							{selectedOrgId === org._id
 								? 'border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/20'
-								: 'border-gray-700 bg-gray-800/30 hover:border-gray-600 hover:bg-gray-800/50'} backdrop-blur-sm"
+								: 'border-gray-300 bg-white/30 hover:border-gray-400 hover:bg-white/50 dark:border-gray-600 dark:bg-gray-800/30 dark:hover:border-gray-500 dark:hover:bg-gray-800/50'} backdrop-blur-sm"
 							style="animation-delay: {index * 0.1}s"
 							on:click={() => handleSelectOrganization(org._id)}
 							on:keydown={(e) => e.key === 'Enter' && handleSelectOrganization(org._id)}
@@ -195,19 +201,19 @@
 								</div>
 
 								<h3
-									class="mb-2 text-xl font-semibold text-white transition-colors group-hover:text-blue-400"
+									class="mb-2 text-xl font-semibold text-gray-800 transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400"
 								>
 									{org.name}
 								</h3>
 
 								{#if org.description}
-									<p class="mb-3 line-clamp-2 text-sm text-gray-400">
+									<p class="mb-3 line-clamp-2 text-sm text-gray-600 dark:text-gray-400">
 										{org.description}
 									</p>
 								{/if}
 
 								<!-- Metadata -->
-								<div class="flex items-center justify-between text-xs text-gray-500">
+								<div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
 									<span class="flex items-center">
 										<svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path
@@ -229,7 +235,7 @@
 				<!-- No results message -->
 				{#if searchQuery && filteredOrganizations.length === 0}
 					<div class="py-8 text-center">
-						<div class="mb-4 text-gray-400">
+						<div class="mb-4 text-gray-600 dark:text-gray-400">
 							<svg
 								class="mx-auto mb-4 h-16 w-16 opacity-50"
 								fill="none"
@@ -258,7 +264,7 @@
 							on:change={toggleRememberChoice}
 							class="custom-checkbox"
 						/>
-						<span class="ml-3 text-sm text-gray-400">
+						<span class="ml-3 text-sm text-gray-600 dark:text-gray-400">
 							Remember my choice and skip this screen next time
 						</span>
 					</label>
@@ -266,7 +272,7 @@
 					{#if localStorage.getItem('preferredOrganization')}
 						<button
 							on:click={clearRememberedChoice}
-							class="text-xs text-gray-500 underline hover:text-gray-400"
+							class="text-xs text-gray-500 underline hover:text-gray-400 dark:text-gray-400 dark:hover:text-gray-300"
 						>
 							Clear remembered organization
 						</button>
@@ -281,22 +287,22 @@
 						class="rounded-xl px-8 py-3 font-medium transition-all duration-200
 						{selectedOrgId
 							? 'bg-blue-600 text-white shadow-lg hover:bg-blue-700 hover:shadow-xl'
-							: 'cursor-not-allowed bg-gray-700 text-gray-400'}
-						focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+							: 'cursor-not-allowed bg-gray-300 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}
+						focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-900"
 					>
 						Continue to Organization
 					</button>
 
 					<button
 						on:click={() => (createModalVisible = true)}
-						class="rounded-xl border border-gray-600 px-8 py-3 font-medium text-gray-300 transition-all duration-200 hover:border-gray-500 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+						class="rounded-xl border border-gray-400 px-8 py-3 font-medium text-gray-700 transition-all duration-200 hover:border-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:border-gray-500 dark:hover:bg-gray-800 dark:focus:ring-offset-gray-900"
 					>
 						Create New Organization
 					</button>
 				</div>
 
 				<!-- Quick stats -->
-				<div class="mt-8 text-center text-sm text-gray-500">
+				<div class="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
 					<p>
 						You have access to {data.organizations.length} organization{data.organizations
 							.length !== 1
@@ -316,13 +322,13 @@
 	class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
 >
 	<div
-		class="w-full max-w-md rounded-2xl border border-gray-700 bg-gray-900/95 p-8 shadow-2xl backdrop-blur-sm"
+		class="w-full max-w-md rounded-2xl border border-gray-200 bg-white/95 p-8 shadow-2xl backdrop-blur-sm dark:border-gray-700 dark:bg-gray-900/95"
 	>
 		<div class="mb-6 flex items-center justify-between">
-			<h2 class="text-2xl font-bold text-white">Create Organization</h2>
+			<h2 class="text-2xl font-bold text-gray-800 dark:text-white">Create Organization</h2>
 			<button
 				on:click={() => (createModalVisible = false)}
-				class="text-gray-400 transition-colors hover:text-gray-300"
+				class="text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
 				aria-label="Close modal"
 			>
 				<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -338,7 +344,7 @@
 
 		<form id="create-org-form" on:submit={handleCreateOrganization} class="space-y-6">
 			<div>
-				<label for="org-name" class="mb-2 block text-sm font-medium text-gray-300">
+				<label for="org-name" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
 					Organization Name
 				</label>
 				<input
@@ -346,21 +352,21 @@
 					id="org-name"
 					bind:value={orgName}
 					placeholder="Enter organization name"
-					class="w-full rounded-xl border border-gray-700 bg-gray-800/50 px-4 py-3 text-gray-100 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+					class="w-full rounded-xl border border-gray-300 bg-white/50 px-4 py-3 text-gray-800 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-800/50 dark:text-gray-100 dark:placeholder-gray-400"
 					required
 					disabled={isLoading}
 				/>
 			</div>
 
 			<div>
-				<label for="org-description" class="mb-2 block text-sm font-medium text-gray-300">
+				<label for="org-description" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
 					Description
 				</label>
 				<textarea
 					id="org-description"
 					placeholder="What does your organization do?"
 					bind:value={orgDescription}
-					class="w-full resize-none rounded-xl border border-gray-700 bg-gray-800/50 px-4 py-3 text-gray-100 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+					class="w-full resize-none rounded-xl border border-gray-300 bg-white/50 px-4 py-3 text-gray-800 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-800/50 dark:text-gray-100 dark:placeholder-gray-400"
 					rows="3"
 					required
 					disabled={isLoading}
@@ -372,7 +378,7 @@
 					on:click={() => (createModalVisible = false)}
 					type="button"
 					id="close-create-org-modal"
-					class="flex-1 rounded-xl border border-gray-600 px-4 py-3 text-gray-300 transition-all duration-200 hover:border-gray-500 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500"
+					class="flex-1 rounded-xl border border-gray-400 px-4 py-3 text-gray-700 transition-all duration-200 hover:border-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:border-gray-600 dark:text-gray-300 dark:hover:border-gray-500 dark:hover:bg-gray-800"
 					disabled={isLoading}
 				>
 					Cancel
