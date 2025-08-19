@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import ProfileModal from '$lib/ui/modal/ProfileModal.svelte';
 	import ThemeToggle from '$lib/ui/ThemeToggle.svelte';
 
@@ -19,6 +20,21 @@
 			: orgName.length > 10
 				? orgName.substring(0, 10) + '...'
 				: orgName;
+
+	// Dynamic page title based on current route
+	$: pageTitle = (() => {
+		const url = $page.url.pathname;
+		if (url.includes('/dashboard')) return 'Dashboard';
+		if (url.includes('/admin/users')) return 'Users';
+		if (url.includes('/project/')) {
+			if (url.includes('/agents')) return 'Agents';
+			if (url.includes('/config')) return 'Configuration';
+			if (url.includes('/prompt/')) return 'Prompt';
+			if (url.includes('/add')) return 'Add Agent';
+			return 'Project';
+		}
+		return 'Projects';
+	})();
 
 	// Check if device is mobile
 	onMount(() => {
@@ -150,8 +166,8 @@
 
 			<!-- Navigation Links -->
 			<nav class="space-y-1">
-				<button
-					type="button"
+				<a
+					href="/app/org/{data.organization_id}/dashboard"
 					class="flex w-full items-center rounded-lg px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 {sidebarCollapsed &&
 					!isMobile
 						? 'justify-center'
@@ -162,7 +178,7 @@
 					{#if !sidebarCollapsed || isMobile}
 						<span class="nav-text">Dashboard</span>
 					{/if}
-				</button>
+				</a>
 				<a
 					href="/app/org/{data.organization_id}"
 					class="flex items-center rounded-lg px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 {sidebarCollapsed &&
@@ -226,7 +242,7 @@
 							? 'text-xl'
 							: 'text-2xl'} font-semibold text-gray-800 dark:text-gray-100"
 					>
-						Projects
+						{pageTitle}
 					</h1>
 				</div>
 				<div class="flex items-center {isMobile ? 'space-x-2' : 'space-x-4'}">

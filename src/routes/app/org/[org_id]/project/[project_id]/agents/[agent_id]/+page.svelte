@@ -6,20 +6,31 @@
 	import ExecuteAgentModal from '$lib/ui/modal/ExecuteAgentModal.svelte';
 	import EditAgentModal from '$lib/ui/modal/EditAgentModal.svelte';
 	import ConfigureApiEndpointsModal from '$lib/ui/modal/ConfigureApiEndpointsModal.svelte';
+	import type { AgentStatistics } from '$lib/api';
 
 	export let data;
 
 	let agent = null;
 	let conversations = [];
 	let executions = [];
+	let statistics: AgentStatistics | null = null;
 	let loading = true;
 	let showChatModal = false;
 	let showExecuteModal = false;
 	let showEditModal = false;
 	let showApiConfigModal = false;
+	let selectedStatsPeriod: '1d' | '1w' | '1m' = '1d';
+	let activeTab = 'overview'; // 'overview', 'conversations', 'executions', 'statistics'
+
+	const statsPeriods = [
+		{ value: '1d', label: '24 Hours' },
+		{ value: '1w', label: '7 Days' },
+		{ value: '1m', label: '30 Days' }
+	];
 
 	onMount(async () => {
 		await loadAgentData();
+		await loadStatistics();
 	});
 
 	async function loadAgentData() {
@@ -57,6 +68,42 @@
 			console.error('Failed to load agent data:', error);
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function loadStatistics() {
+		try {
+			statistics = await api.getAgentStatistics(
+				data.organization_id,
+				data.agent_id,
+				selectedStatsPeriod
+			);
+		} catch (error) {
+			console.error('Failed to load agent statistics:', error);
+		}
+	}
+
+	function handleStatsPeriodChange(event: Event) {
+		selectedStatsPeriod = (event.target as HTMLSelectElement).value as '1d' | '1w' | '1m';
+		loadStatistics();
+	}
+
+	function formatNumber(num: number): string {
+		if (num >= 1000000) {
+			return (num / 1000000).toFixed(1) + 'M';
+		} else if (num >= 1000) {
+			return (num / 1000).toFixed(1) + 'K';
+		}
+		return num.toString();
+	}
+
+	function formatDuration(ms: number): string {
+		if (ms < 1000) {
+			return `${ms}ms`;
+		} else if (ms < 60000) {
+			return `${(ms / 1000).toFixed(1)}s`;
+		} else {
+			return `${(ms / 60000).toFixed(1)}m`;
 		}
 	}
 
@@ -527,6 +574,190 @@
 					</div>
 				{/if}
 			</div>
+		</div>
+
+		<!-- Statistics Section -->
+		<div class="mb-8">
+			<div class="mb-6 flex items-center justify-between">
+				<h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+					Performance Statistics
+				</h2>
+				<select
+					bind:value={selectedStatsPeriod}
+					on:change={handleStatsPeriodChange}
+					class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+				>
+					{#each statsPeriods as period}
+						<option value={period.value}>{period.label}</option>
+					{/each}
+				</select>
+			</div>
+
+			{#if statistics}
+				<!-- Statistics Overview Cards -->
+				<div class="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+					<div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+						<div class="flex items-center">
+							<div class="flex-shrink-0">
+								<div class="rounded-md bg-blue-500 p-3">
+									<i class="fas fa-play text-white"></i>
+								</div>
+							</div>
+							<div class="ml-5 w-0 flex-1">
+								<dl>
+									<dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">
+										Total Executions
+									</dt>
+									<dd class="text-lg font-medium text-gray-900 dark:text-white">
+										{formatNumber(statistics.overview.totalExecutions)}
+									</dd>
+								</dl>
+							</div>
+						</div>
+					</div>
+
+					<div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+						<div class="flex items-center">
+							<div class="flex-shrink-0">
+								<div class="rounded-md bg-green-500 p-3">
+									<i class="fas fa-check text-white"></i>
+								</div>
+							</div>
+							<div class="ml-5 w-0 flex-1">
+								<dl>
+									<dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">
+										Success Rate
+									</dt>
+									<dd class="text-lg font-medium text-gray-900 dark:text-white">
+										{statistics.overview.successRate.toFixed(1)}%
+									</dd>
+								</dl>
+							</div>
+						</div>
+					</div>
+
+					<div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+						<div class="flex items-center">
+							<div class="flex-shrink-0">
+								<div class="rounded-md bg-orange-500 p-3">
+									<i class="fas fa-clock text-white"></i>
+								</div>
+							</div>
+							<div class="ml-5 w-0 flex-1">
+								<dl>
+									<dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">
+										Avg Execution Time
+									</dt>
+									<dd class="text-lg font-medium text-gray-900 dark:text-white">
+										{formatDuration(statistics.overview.averageExecutionTime)}
+									</dd>
+								</dl>
+							</div>
+						</div>
+					</div>
+
+					<div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+						<div class="flex items-center">
+							<div class="flex-shrink-0">
+								<div class="rounded-md bg-red-500 p-3">
+									<i class="fas fa-times text-white"></i>
+								</div>
+							</div>
+							<div class="ml-5 w-0 flex-1">
+								<dl>
+									<dt class="truncate text-sm font-medium text-gray-500 dark:text-gray-400">
+										Failed Executions
+									</dt>
+									<dd class="text-lg font-medium text-gray-900 dark:text-white">
+										{formatNumber(statistics.overview.failedExecutions)}
+									</dd>
+								</dl>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Daily Usage Chart -->
+				<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+					<div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+						<h3 class="mb-4 text-lg font-medium text-gray-900 dark:text-white">
+							Daily Usage Trends
+						</h3>
+						<div class="space-y-3">
+							{#each statistics.dailyUsage as day}
+								<div class="flex items-center justify-between">
+									<span class="text-sm text-gray-600 dark:text-gray-400">
+										{new Date(day.date).toLocaleDateString()}
+									</span>
+									<div class="flex items-center space-x-4">
+										<div class="flex items-center space-x-2">
+											<div class="h-3 w-3 rounded-full bg-blue-500"></div>
+											<span class="text-sm text-gray-600 dark:text-gray-400">{day.executions}</span>
+										</div>
+										<div class="h-2 w-24 rounded-full bg-gray-200 dark:bg-gray-700">
+											<div
+												class="h-2 rounded-full bg-blue-500"
+												style="width: {Math.min(
+													100,
+													(day.executions /
+														Math.max(...statistics.dailyUsage.map((d) => d.executions))) *
+														100
+												)}%"
+											></div>
+										</div>
+									</div>
+								</div>
+							{/each}
+						</div>
+					</div>
+
+					<!-- Recent Executions -->
+					<div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+						<h3 class="mb-4 text-lg font-medium text-gray-900 dark:text-white">
+							Recent Performance
+						</h3>
+						<div class="space-y-3">
+							{#each statistics.recentExecutions.slice(0, 5) as execution}
+								<div
+									class="flex items-center justify-between border-b border-gray-200 pb-3 last:border-b-0 dark:border-gray-700"
+								>
+									<div class="flex items-center space-x-3">
+										<div class="flex-shrink-0">
+											{#if execution.status === 'success'}
+												<div class="h-2 w-2 rounded-full bg-green-500"></div>
+											{:else if execution.status === 'failed'}
+												<div class="h-2 w-2 rounded-full bg-red-500"></div>
+											{:else}
+												<div class="h-2 w-2 rounded-full bg-yellow-500"></div>
+											{/if}
+										</div>
+										<div>
+											<p class="text-sm font-medium capitalize text-gray-900 dark:text-white">
+												{execution.status}
+											</p>
+											<p class="text-xs text-gray-500 dark:text-gray-400">
+												{new Date(execution.timestamp).toLocaleString()}
+											</p>
+										</div>
+									</div>
+									<div class="text-right">
+										<p class="text-sm font-medium text-gray-900 dark:text-white">
+											{formatDuration(execution.executionTime)}
+										</p>
+									</div>
+								</div>
+							{/each}
+						</div>
+					</div>
+				</div>
+			{:else}
+				<div class="rounded-lg bg-white p-8 text-center shadow dark:bg-gray-800">
+					<div
+						class="mx-auto mb-4 h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"
+					></div>
+					<p class="text-gray-600 dark:text-gray-400">Loading statistics...</p>
+				</div>
+			{/if}
 		</div>
 	</div>
 

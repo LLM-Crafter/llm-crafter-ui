@@ -104,6 +104,87 @@ export interface TestPromptParameters {
 	};
 }
 
+export interface DashboardStatistics {
+	period: string;
+	timeRange: {
+		start: string;
+		end: string;
+	};
+	overview: {
+		totalTokensUsed: number;
+		totalCost: number;
+		totalApiCalls: number;
+		totalConversations: number;
+		totalAgents: number;
+		totalProjects: number;
+	};
+	promptExecutions: {
+		totalCalls: number;
+		totalTokens: number;
+		totalCost: number;
+		avgTokensPerCall: number;
+		successRate: number;
+		breakdown: {
+			successful: number;
+			errors: number;
+			cached: number;
+		};
+	};
+	agentExecutions: {
+		totalExecutions: number;
+		totalTokens: number;
+		totalCost: number;
+		totalToolCalls: number;
+		avgExecutionTime: number;
+		successRate: number;
+		breakdown: {
+			completed: number;
+			failed: number;
+			pending: number;
+		};
+	};
+	conversations: {
+		total: number;
+		totalMessages: number;
+		totalTokens: number;
+		totalCost: number;
+		totalToolsExecuted: number;
+		avgMessagesPerConversation: string;
+		breakdown: {
+			active: number;
+			ended: number;
+		};
+	};
+	recentActivity: Array<any>;
+	topAgents: Array<any>;
+	dailyUsage: Array<any>;
+}
+
+export interface AgentStatistics {
+	overview: {
+		totalExecutions: number;
+		successfulExecutions: number;
+		failedExecutions: number;
+		successRate: number;
+		averageExecutionTime: number;
+	};
+	dailyUsage: Array<{
+		date: string;
+		executions: number;
+		successfulExecutions: number;
+		failedExecutions: number;
+		averageExecutionTime: number;
+	}>;
+	recentExecutions: Array<{
+		status: 'success' | 'failed' | 'pending';
+		timestamp: string;
+		executionTime: number;
+		input?: string;
+		output?: string;
+		errorMessage?: string;
+	}>;
+}
+
 class ApiClient {
 	async fetch(endpoint: string, options: RequestInit = {}) {
 		const authToken = get(token);
@@ -501,6 +582,71 @@ class ApiClient {
 
 		const data = await response.json();
 		return data.token; // assuming API returns { token: '...' }
+	}
+
+	async getDashboardStatistics(
+		orgId: string,
+		period: '1d' | '1w' | '1m' = '1d'
+	): Promise<DashboardStatistics> {
+		const currentToken = get(token);
+		if (!currentToken) {
+			throw new Error('Authentication required');
+		}
+
+		const response = await fetch(
+			`${API_URL}/organizations/${orgId}/statistics/dashboard?period=${period}`,
+			{
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${currentToken}`,
+					'Content-Type': 'application/json'
+				}
+			}
+		);
+
+		if (!response.ok) {
+			if (response.status === 401) {
+				token.set(null);
+				goto('/login');
+				throw new Error('Authentication failed');
+			}
+			throw new Error(`Failed to fetch dashboard statistics: ${response.statusText}`);
+		}
+
+		return await response.json();
+	}
+
+	async getAgentStatistics(
+		orgId: string,
+		agentId: string,
+		period: '1d' | '1w' | '1m' = '1d'
+	): Promise<AgentStatistics> {
+		const currentToken = get(token);
+		if (!currentToken) {
+			throw new Error('Authentication required');
+		}
+
+		const response = await fetch(
+			`${API_URL}/organizations/${orgId}/statistics/agents/${agentId}?period=${period}`,
+			{
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${currentToken}`,
+					'Content-Type': 'application/json'
+				}
+			}
+		);
+
+		if (!response.ok) {
+			if (response.status === 401) {
+				token.set(null);
+				goto('/login');
+				throw new Error('Authentication failed');
+			}
+			throw new Error(`Failed to fetch agent statistics: ${response.statusText}`);
+		}
+
+		return await response.json();
 	}
 }
 
