@@ -34,17 +34,26 @@
 	}
 </script>
 
-<div id="register-screen" class="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
+<div
+	id="register-screen"
+	class="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950"
+>
 	<!-- Theme Toggle -->
-	<div class="absolute top-4 right-4">
+	<div class="absolute right-4 top-4">
 		<ThemeToggle size="md" />
 	</div>
-	
-	<div class="w-96 rounded-lg border border-gray-200 bg-white p-8 shadow-lg dark:border-gray-700 dark:bg-gray-800">
-		<h1 class="mb-6 text-center text-3xl font-semibold text-gray-800 dark:text-gray-100">Create Account</h1>
+
+	<div
+		class="w-96 rounded-lg border border-gray-200 bg-white p-8 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+	>
+		<h1 class="mb-6 text-center text-3xl font-semibold text-gray-800 dark:text-gray-100">
+			Create Account
+		</h1>
 		<form on:submit|preventDefault={handleSubmit}>
 			<div class="mb-4">
-				<label for="name" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
+				<label for="name" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+					>Full Name</label
+				>
 				<input
 					type="text"
 					id="name"
@@ -56,7 +65,9 @@
 				/>
 			</div>
 			<div class="mb-4">
-				<label for="email" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+				<label for="email" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+					>Email</label
+				>
 				<input
 					type="email"
 					id="email"
@@ -68,7 +79,10 @@
 				/>
 			</div>
 			<div class="mb-6">
-				<label for="password" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+				<label
+					for="password"
+					class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label
+				>
 				<input
 					type="password"
 					id="password"
@@ -95,7 +109,11 @@
 		<div class="mt-6 text-center">
 			<p class="text-sm text-gray-600 dark:text-gray-400">
 				Already have an account?
-				<a href="/login" class="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">Login</a>
+				<a
+					href="/login"
+					class="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+					>Login</a
+				>
 			</p>
 		</div>
 	</div>

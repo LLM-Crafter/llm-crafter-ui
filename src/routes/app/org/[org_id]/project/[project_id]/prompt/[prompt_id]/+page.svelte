@@ -132,10 +132,12 @@
 							d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
 						></path>
 					</svg>
-					<label class="text-sm font-medium text-purple-700 dark:text-purple-300" for="system-prompt-text"
-						>System Prompt</label
+					<label
+						class="text-sm font-medium text-purple-700 dark:text-purple-300"
+						for="system-prompt-text">System Prompt</label
 					>
-					<span class="ml-auto rounded-full bg-purple-100 px-2 py-1 text-xs text-purple-700 dark:bg-purple-900/50 dark:text-purple-300"
+					<span
+						class="ml-auto rounded-full bg-purple-100 px-2 py-1 text-xs text-purple-700 dark:bg-purple-900/50 dark:text-purple-300"
 						>Optional</span
 					>
 				</div>
@@ -167,7 +169,9 @@
 				</p>
 			</div>
 			<div>
-				<label class="mb-1 block text-sm text-gray-700 dark:text-gray-400" for="prompt-text">Prompt template</label>
+				<label class="mb-1 block text-sm text-gray-700 dark:text-gray-400" for="prompt-text"
+					>Prompt template</label
+				>
 				<textarea
 					id="prompt-text"
 					class="mb-2 w-full rounded-lg border border-gray-300 bg-white p-3 font-mono text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
@@ -175,7 +179,9 @@
 					bind:value={promptContent}
 					spellcheck="false"
 				></textarea>
-				<label class="text-xs text-gray-600 dark:text-gray-400">Preview with syntax highlighting:</label>
+				<label class="text-xs text-gray-600 dark:text-gray-400"
+					>Preview with syntax highlighting:</label
+				>
 				<pre
 					class="mt-1 overflow-x-auto rounded border border-gray-300 bg-gray-50 p-3 font-mono text-xs dark:border-gray-600 dark:bg-gray-800"
 					tabindex="0"><code class="language-markup">{@html highlighted}</code></pre>
@@ -212,7 +218,9 @@
 		</div>
 
 		<!-- LLM Settings -->
-		<div class="flex flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+		<div
+			class="flex flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+		>
 			<h3 class="mb-4 text-xl font-semibold text-gray-900 dark:text-white">LLM Settings</h3>
 			{#each [{ label: 'Temperature', key: 'temperature', min: 0, max: 1, step: 0.1, placeholder: '0.7' }, { label: 'Max Tokens', key: 'max_tokens', min: 1, max: undefined, step: 1, placeholder: '100' }, { label: 'Top P', key: 'top_p', min: 0, max: 1, step: 0.01, placeholder: '1.0' }, { label: 'Frequency Penalty', key: 'frequency_penalty', min: 0, max: 2, step: 0.01, placeholder: '0.0' }, { label: 'Presence Penalty', key: 'presence_penalty', min: 0, max: 2, step: 0.01, placeholder: '0.0' }] as item}
 				<div class="mb-4">
@@ -248,7 +256,9 @@
 				on:click={() => (executionHistoryCollapsed = !executionHistoryCollapsed)}
 			>
 				<span class="text-lg font-semibold text-gray-900 dark:text-white">Execution History</span>
-				<span class="rounded bg-gray-200 px-2 text-xs text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+				<span
+					class="rounded bg-gray-200 px-2 text-xs text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+				>
 					{promptExecutions.length} results
 				</span>
 				<svg
@@ -261,20 +271,37 @@
 				>
 					<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
 				</svg>
-				<span class="text-xs text-gray-600 dark:text-gray-400">{executionHistoryCollapsed ? '(show)' : '(hide)'}</span>
+				<span class="text-xs text-gray-600 dark:text-gray-400"
+					>{executionHistoryCollapsed ? '(show)' : '(hide)'}</span
+				>
 			</div>
 			<div class={executionHistoryCollapsed ? 'hidden' : ''}>
-				<div class="overflow-x-auto rounded-xl border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+				<div
+					class="overflow-x-auto rounded-xl border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+				>
 					<table class="w-full border-collapse text-left text-sm">
 						<thead>
 							<tr>
-								<th class="border-b border-gray-200 p-3 font-semibold text-gray-800 dark:border-gray-700 dark:text-gray-200">Status</th>
-								<th class="border-b border-gray-200 p-3 font-semibold text-gray-800 dark:border-gray-700 dark:text-gray-200">Date/Time</th>
-								<th class="border-b border-gray-200 p-3 font-semibold text-gray-800 dark:border-gray-700 dark:text-gray-200"
+								<th
+									class="border-b border-gray-200 p-3 font-semibold text-gray-800 dark:border-gray-700 dark:text-gray-200"
+									>Status</th
+								>
+								<th
+									class="border-b border-gray-200 p-3 font-semibold text-gray-800 dark:border-gray-700 dark:text-gray-200"
+									>Date/Time</th
+								>
+								<th
+									class="border-b border-gray-200 p-3 font-semibold text-gray-800 dark:border-gray-700 dark:text-gray-200"
 									>Finish Reason</th
 								>
-								<th class="border-b border-gray-200 p-3 font-semibold text-gray-800 dark:border-gray-700 dark:text-gray-200">Price</th>
-								<th class="border-b border-gray-200 p-3 font-semibold text-gray-800 dark:border-gray-700 dark:text-gray-200">Model</th>
+								<th
+									class="border-b border-gray-200 p-3 font-semibold text-gray-800 dark:border-gray-700 dark:text-gray-200"
+									>Price</th
+								>
+								<th
+									class="border-b border-gray-200 p-3 font-semibold text-gray-800 dark:border-gray-700 dark:text-gray-200"
+									>Model</th
+								>
 							</tr>
 						</thead>
 						<tbody>
@@ -282,21 +309,30 @@
 								<tr>
 									<td
 										class="border-b border-gray-200 p-3 dark:border-gray-700
-                                    {execution.status === 'success' ? 'text-green-600 dark:text-green-400' : ''}
-                                    {execution.status === 'error' ? 'text-red-600 dark:text-red-400' : ''}
-                                    {execution.status === 'cached' ? 'text-gray-700 dark:text-gray-300' : ''}"
-										>{execution.status}</td
+                                    {execution.status === 'success'
+											? 'text-green-600 dark:text-green-400'
+											: ''}
+                                    {execution.status === 'error'
+											? 'text-red-600 dark:text-red-400'
+											: ''}
+                                    {execution.status === 'cached'
+											? 'text-gray-700 dark:text-gray-300'
+											: ''}">{execution.status}</td
 									>
-									<td class="border-b border-gray-200 p-3 text-gray-800 dark:border-gray-700 dark:text-gray-200"
+									<td
+										class="border-b border-gray-200 p-3 text-gray-800 dark:border-gray-700 dark:text-gray-200"
 										>{new Date(execution.createdAt).toLocaleString()}</td
 									>
-									<td class="border-b border-gray-200 p-3 text-gray-800 dark:border-gray-700 dark:text-gray-200"
+									<td
+										class="border-b border-gray-200 p-3 text-gray-800 dark:border-gray-700 dark:text-gray-200"
 										>{execution.metadata.finish_reason}</td
 									>
-									<td class="border-b border-gray-200 p-3 text-gray-800 dark:border-gray-700 dark:text-gray-200"
+									<td
+										class="border-b border-gray-200 p-3 text-gray-800 dark:border-gray-700 dark:text-gray-200"
 										>{execution.usage.cost} $</td
 									>
-									<td class="border-b border-gray-200 p-3 text-gray-800 dark:border-gray-700 dark:text-gray-200"
+									<td
+										class="border-b border-gray-200 p-3 text-gray-800 dark:border-gray-700 dark:text-gray-200"
 										>{execution.metadata.model}</td
 									>
 								</tr>

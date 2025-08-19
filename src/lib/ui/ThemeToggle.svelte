@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { theme, toggleTheme } from '$lib/stores/theme';
-	
+
 	export let size: 'sm' | 'md' | 'lg' = 'md';
 	export let showLabel = false;
-	
+
 	$: iconSize = size === 'sm' ? 'text-sm' : size === 'lg' ? 'text-lg' : 'text-base';
 	$: buttonSize = size === 'sm' ? 'p-1.5' : size === 'lg' ? 'p-3' : 'p-2';
 </script>

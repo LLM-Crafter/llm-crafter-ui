@@ -156,7 +156,9 @@
 {:else if !agent}
 	<div class="flex min-h-screen items-center justify-center">
 		<div class="text-center">
-			<div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+			<div
+				class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
+			>
 				<i class="fas fa-exclamation-triangle text-2xl text-red-500 dark:text-red-400"></i>
 			</div>
 			<h3 class="mb-2 text-lg font-medium text-gray-800 dark:text-gray-200">Agent not found</h3>
@@ -253,7 +255,10 @@
 
 			<!-- Breadcrumb -->
 			<nav class="mt-4 flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-				<a href="/app/org/{data.organization_id}" class="hover:text-gray-900 dark:hover:text-gray-300">Projects</a>
+				<a
+					href="/app/org/{data.organization_id}"
+					class="hover:text-gray-900 dark:hover:text-gray-300">Projects</a
+				>
 				<i class="fas fa-chevron-right text-xs"></i>
 				<a
 					href="/app/org/{data.organization_id}/project/{data.project._id}"
@@ -272,14 +277,18 @@
 		<!-- Agent Configuration -->
 		<div class="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
 			<!-- Configuration Card -->
-			<div class="rounded-xl border border-gray-200 bg-white p-6 lg:col-span-2 dark:border-gray-800 dark:bg-gray-900">
+			<div
+				class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900 lg:col-span-2"
+			>
 				<h2 class="mb-4 text-xl font-semibold text-gray-900 dark:text-gray-100">Configuration</h2>
 
 				<div class="space-y-4">
 					<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 						<div>
 							<h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Model</h3>
-							<p class="mt-1 text-gray-900 dark:text-gray-100">{agent.llm_settings?.model || 'Not configured'}</p>
+							<p class="mt-1 text-gray-900 dark:text-gray-100">
+								{agent.llm_settings?.model || 'Not configured'}
+							</p>
 						</div>
 						<div>
 							<h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Temperature</h3>
@@ -303,14 +312,18 @@
 						<div>
 							<h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">System Prompt</h3>
 							<div class="mt-2 rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
-								<p class="whitespace-pre-wrap text-gray-900 dark:text-gray-100">{agent.system_prompt}</p>
+								<p class="whitespace-pre-wrap text-gray-900 dark:text-gray-100">
+									{agent.system_prompt}
+								</p>
 							</div>
 						</div>
 					{/if}
 
 					{#if agent.tools && agent.tools.length > 0}
 						<div>
-							<h3 class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Available Tools</h3>
+							<h3 class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">
+								Available Tools
+							</h3>
 							<div class="flex flex-wrap gap-2">
 								{#each agent.tools.map((tool) => tool.name) as tool}
 									<span
@@ -329,37 +342,53 @@
 			</div>
 
 			<!-- Statistics Card -->
-			<div class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+			<div
+				class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900"
+			>
 				<h2 class="mb-4 text-xl font-semibold text-gray-900 dark:text-gray-100">Statistics</h2>
 
 				<div class="space-y-4">
 					{#if agent.type === 'chatbot'}
-						<div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+						<div
+							class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800"
+						>
 							<div class="flex items-center justify-between">
 								<div>
 									<p class="text-sm text-gray-600 dark:text-gray-400">Conversations</p>
-									<p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{conversations?.total}</p>
+									<p class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+										{conversations?.total}
+									</p>
 								</div>
 								<i class="fas fa-comments text-blue-600 dark:text-blue-400"></i>
 							</div>
 						</div>
 					{:else}
-						<div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+						<div
+							class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800"
+						>
 							<div class="flex items-center justify-between">
 								<div>
 									<p class="text-sm text-gray-600 dark:text-gray-400">Executions</p>
-									<p class="text-2xl font-bold text-green-600 dark:text-green-400">{executions.length}</p>
+									<p class="text-2xl font-bold text-green-600 dark:text-green-400">
+										{executions.length}
+									</p>
 								</div>
 								<i class="fas fa-play text-green-600 dark:text-green-400"></i>
 							</div>
 						</div>
 					{/if}
 
-					<div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+					<div
+						class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800"
+					>
 						<div class="flex items-center justify-between">
 							<div>
 								<p class="text-sm text-gray-600 dark:text-gray-400">Status</p>
-								<p class="text-lg font-bold {agent.is_active ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}">
+								<p
+									class="text-lg font-bold {agent.is_active
+										? 'text-green-600 dark:text-green-400'
+										: 'text-gray-600 dark:text-gray-400'}"
+								>
 									{agent.is_active ? 'Active' : 'Inactive'}
 								</p>
 							</div>
@@ -371,7 +400,9 @@
 						</div>
 					</div>
 
-					<div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+					<div
+						class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800"
+					>
 						<div class="flex items-center justify-between">
 							<div>
 								<p class="text-sm text-gray-600 dark:text-gray-400">Last Updated</p>
@@ -403,7 +434,9 @@
 							>
 								<i class="fas fa-comments text-2xl text-blue-600 dark:text-blue-400"></i>
 							</div>
-							<h3 class="mb-2 text-lg font-medium text-gray-700 dark:text-gray-300">No conversations yet</h3>
+							<h3 class="mb-2 text-lg font-medium text-gray-700 dark:text-gray-300">
+								No conversations yet
+							</h3>
 							<p class="mb-6 text-gray-600 dark:text-gray-400">
 								Start a conversation with this agent to see the history here.
 							</p>
@@ -418,10 +451,14 @@
 					{:else}
 						<div class="space-y-4">
 							{#each conversations?.conversations || [] as conversation}
-								<div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+								<div
+									class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800"
+								>
 									<div class="flex items-center justify-between">
 										<div>
-											<h4 class="font-medium text-gray-900 dark:text-gray-100">Conversation - {conversation.title}</h4>
+											<h4 class="font-medium text-gray-900 dark:text-gray-100">
+												Conversation - {conversation.title}
+											</h4>
 											<p class="text-sm text-gray-600 dark:text-gray-400">
 												{conversation.messages?.length || 0} messages • {formatDate(
 													conversation.updatedAt
@@ -445,8 +482,12 @@
 						>
 							<i class="fas fa-play text-2xl text-green-600 dark:text-green-400"></i>
 						</div>
-						<h3 class="mb-2 text-lg font-medium text-gray-700 dark:text-gray-300">No executions yet</h3>
-						<p class="mb-6 text-gray-600 dark:text-gray-400">Execute this agent to see the execution history here.</p>
+						<h3 class="mb-2 text-lg font-medium text-gray-700 dark:text-gray-300">
+							No executions yet
+						</h3>
+						<p class="mb-6 text-gray-600 dark:text-gray-400">
+							Execute this agent to see the execution history here.
+						</p>
 						<button
 							on:click={() => (showExecuteModal = true)}
 							class="inline-flex items-center space-x-2 rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700"
@@ -458,15 +499,21 @@
 				{:else}
 					<div class="space-y-4">
 						{#each executions.slice(0, 10) as execution}
-							<div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+							<div
+								class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800"
+							>
 								<div class="flex items-center justify-between">
 									<div>
-										<h4 class="font-medium text-gray-900 dark:text-gray-100">Execution #{execution.id}</h4>
+										<h4 class="font-medium text-gray-900 dark:text-gray-100">
+											Execution #{execution.id}
+										</h4>
 										<p class="text-sm text-gray-600 dark:text-gray-400">
 											{execution.status || 'Completed'} • {formatDate(execution.createdAt)}
 										</p>
 										{#if execution.execution_time}
-											<p class="text-xs text-gray-500 dark:text-gray-500">Duration: {execution.execution_time}ms</p>
+											<p class="text-xs text-gray-500 dark:text-gray-500">
+												Duration: {execution.execution_time}ms
+											</p>
 										{/if}
 									</div>
 									<span

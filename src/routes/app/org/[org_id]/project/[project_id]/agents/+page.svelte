@@ -219,7 +219,9 @@
 				</div>
 				<div>
 					<h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">AI Agents</h1>
-					<p class="text-gray-600 dark:text-gray-400">Manage intelligent agents for {data.project.name}</p>
+					<p class="text-gray-600 dark:text-gray-400">
+						Manage intelligent agents for {data.project.name}
+					</p>
 				</div>
 			</div>
 			<div class="flex space-x-3">
@@ -235,7 +237,9 @@
 
 		<!-- Breadcrumb -->
 		<nav class="mt-4 flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-			<a href="/app/org/{data.organization_id}" class="hover:text-gray-700 dark:hover:text-gray-300">Projects</a>
+			<a href="/app/org/{data.organization_id}" class="hover:text-gray-700 dark:hover:text-gray-300"
+				>Projects</a
+			>
 			<i class="fas fa-chevron-right text-xs"></i>
 			<a
 				href="/app/org/{data.organization_id}/project/{data.project._id}"
@@ -270,7 +274,9 @@
 
 	<!-- Statistics Cards -->
 	<div class="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-		<div class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+		<div
+			class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+		>
 			<div class="flex items-center justify-between">
 				<div>
 					<p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Agents</p>
@@ -281,7 +287,9 @@
 				</div>
 			</div>
 		</div>
-		<div class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+		<div
+			class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+		>
 			<div class="flex items-center justify-between">
 				<div>
 					<p class="text-sm font-medium text-gray-600 dark:text-gray-400">Active Agents</p>
@@ -294,7 +302,9 @@
 				</div>
 			</div>
 		</div>
-		<div class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+		<div
+			class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+		>
 			<div class="flex items-center justify-between">
 				<div>
 					<p class="text-sm font-medium text-gray-600 dark:text-gray-400">Chatbots</p>
@@ -307,7 +317,9 @@
 				</div>
 			</div>
 		</div>
-		<div class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+		<div
+			class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+		>
 			<div class="flex items-center justify-between">
 				<div>
 					<p class="text-sm font-medium text-gray-600 dark:text-gray-400">Task Agents</p>
@@ -331,13 +343,17 @@
 			>
 				<div>
 					<h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Agent Management</h2>
-					<p class="text-sm text-gray-600 dark:text-gray-400">Create and manage intelligent AI agents</p>
+					<p class="text-sm text-gray-600 dark:text-gray-400">
+						Create and manage intelligent AI agents
+					</p>
 				</div>
 
 				<!-- Search and Filter -->
 				<div class="flex items-center space-x-3">
 					<div class="relative">
-						<i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"></i>
+						<i
+							class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+						></i>
 						<input
 							type="text"
 							placeholder="Search agents..."
@@ -416,7 +432,8 @@
 									<span
 										class="inline-flex items-center rounded-full bg-green-500/10 px-2.5 py-0.5 text-xs font-medium text-green-600 dark:text-green-400"
 									>
-										<span class="mr-1 h-1.5 w-1.5 rounded-full bg-green-600 dark:bg-green-400"></span>
+										<span class="mr-1 h-1.5 w-1.5 rounded-full bg-green-600 dark:bg-green-400"
+										></span>
 										Active
 									</span>
 								{:else}
@@ -448,7 +465,9 @@
 								<div class="mb-4 rounded-lg bg-gray-50 p-3 dark:bg-gray-700/50">
 									<div class="flex items-center justify-between text-sm">
 										<span class="text-gray-600 dark:text-gray-400">Model:</span>
-										<span class="font-medium text-gray-900 dark:text-gray-200">{agent.llm_settings.model}</span>
+										<span class="font-medium text-gray-900 dark:text-gray-200"
+											>{agent.llm_settings.model}</span
+										>
 									</div>
 									{#if agent.llm_settings.parameters?.temperature}
 										<div class="mt-1 flex items-center justify-between text-sm">
@@ -487,7 +506,9 @@
 							{/if}
 
 							<!-- Meta Info -->
-							<div class="mb-4 flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+							<div
+								class="mb-4 flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400"
+							>
 								<span class="flex items-center">
 									<i class="fas fa-calendar mr-1"></i>
 									{formatDate(agent.updatedAt || agent.createdAt)}
@@ -577,7 +598,9 @@
 <!-- Delete Confirmation Modal -->
 {#if showDeleteModal && agentToDelete}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-		<div class="mx-4 w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-800">
+		<div
+			class="mx-4 w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-800"
+		>
 			<div class="mb-4 flex items-center space-x-3">
 				<div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/10">
 					<i class="fas fa-exclamation-triangle text-red-500 dark:text-red-400"></i>
@@ -589,8 +612,9 @@
 			</div>
 
 			<p class="mb-6 text-gray-700 dark:text-gray-300">
-				Are you sure you want to delete <strong class="text-gray-900 dark:text-white">"{agentToDelete.name}"</strong>?
-				This will also delete all associated conversations and execution history.
+				Are you sure you want to delete <strong class="text-gray-900 dark:text-white"
+					>"{agentToDelete.name}"</strong
+				>? This will also delete all associated conversations and execution history.
 			</p>
 
 			<div class="flex justify-end space-x-3">

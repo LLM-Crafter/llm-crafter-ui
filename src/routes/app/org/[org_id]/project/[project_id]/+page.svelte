@@ -76,7 +76,9 @@
 				</div>
 				<div>
 					<h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">{data.project.name}</h1>
-					<p class="text-gray-600 dark:text-gray-400">Manage your AI prompts, templates, and intelligent agents</p>
+					<p class="text-gray-600 dark:text-gray-400">
+						Manage your AI prompts, templates, and intelligent agents
+					</p>
 				</div>
 			</div>
 			<div class="flex space-x-3">
@@ -106,7 +108,9 @@
 
 		<!-- Breadcrumb -->
 		<nav class="mt-4 flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-			<a href="/app/org/{data.organization_id}" class="hover:text-gray-700 dark:hover:text-gray-300">Projects</a>
+			<a href="/app/org/{data.organization_id}" class="hover:text-gray-700 dark:hover:text-gray-300"
+				>Projects</a
+			>
 			<i class="fas fa-chevron-right text-xs"></i>
 			<span class="text-gray-800 dark:text-gray-200">{data.project.name}</span>
 		</nav>
@@ -136,18 +140,24 @@
 
 	<!-- Statistics Cards -->
 	<div class="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-		<div class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+		<div
+			class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+		>
 			<div class="flex items-center justify-between">
 				<div>
 					<p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Prompts</p>
-					<p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{data.project.prompts?.length || 0}</p>
+					<p class="text-2xl font-bold text-gray-800 dark:text-gray-100">
+						{data.project.prompts?.length || 0}
+					</p>
 				</div>
 				<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
 					<i class="fas fa-file-alt text-blue-600 dark:text-blue-400"></i>
 				</div>
 			</div>
 		</div>
-		<div class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+		<div
+			class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+		>
 			<div class="flex items-center justify-between">
 				<div>
 					<p class="text-sm font-medium text-gray-600 dark:text-gray-400">Active</p>
@@ -160,22 +170,30 @@
 				</div>
 			</div>
 		</div>
-		<div class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+		<div
+			class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+		>
 			<div class="flex items-center justify-between">
 				<div>
 					<p class="text-sm font-medium text-gray-600 dark:text-gray-400">Last Updated</p>
-					<p class="text-sm font-medium text-gray-800 dark:text-gray-200">{formatDate(data.project.updatedAt)}</p>
+					<p class="text-sm font-medium text-gray-800 dark:text-gray-200">
+						{formatDate(data.project.updatedAt)}
+					</p>
 				</div>
 				<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-500/10">
 					<i class="fas fa-clock text-purple-600 dark:text-purple-400"></i>
 				</div>
 			</div>
 		</div>
-		<div class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+		<div
+			class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+		>
 			<div class="flex items-center justify-between">
 				<div>
 					<p class="text-sm font-medium text-gray-600 dark:text-gray-400">Project Type</p>
-					<p class="text-sm font-medium text-gray-800 dark:text-gray-200">{data.project.type || 'General'}</p>
+					<p class="text-sm font-medium text-gray-800 dark:text-gray-200">
+						{data.project.type || 'General'}
+					</p>
 				</div>
 				<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-500/10">
 					<i class="fas fa-tag text-orange-600 dark:text-orange-400"></i>
@@ -193,13 +211,17 @@
 			>
 				<div>
 					<h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Prompt Library</h2>
-					<p class="text-sm text-gray-600 dark:text-gray-400">Create, manage, and organize your AI prompts</p>
+					<p class="text-sm text-gray-600 dark:text-gray-400">
+						Create, manage, and organize your AI prompts
+					</p>
 				</div>
 
 				<!-- Search and Filter -->
 				<div class="flex items-center space-x-3">
 					<div class="relative">
-						<i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"></i>
+						<i
+							class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+						></i>
 						<input
 							type="text"
 							placeholder="Search prompts..."
@@ -258,7 +280,9 @@
 
 							<!-- Content -->
 							<div class="mb-4">
-								<h3 class="mb-2 text-lg font-semibold text-gray-900 group-hover:text-gray-800 dark:text-gray-100 dark:group-hover:text-white">
+								<h3
+									class="mb-2 text-lg font-semibold text-gray-900 group-hover:text-gray-800 dark:text-gray-100 dark:group-hover:text-white"
+								>
 									{prompt.name}
 								</h3>
 								<p class="line-clamp-2 text-sm text-gray-600 dark:text-gray-400">
@@ -267,7 +291,9 @@
 							</div>
 
 							<!-- Meta Info -->
-							<div class="mb-4 flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+							<div
+								class="mb-4 flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400"
+							>
 								<span class="flex items-center">
 									<i class="fas fa-calendar mr-1"></i>
 									{formatDate(prompt.updatedAt || prompt.createdAt)}
@@ -318,7 +344,9 @@
 <!-- Delete Confirmation Modal -->
 {#if showDeleteModal && promptToDelete}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-		<div class="mx-4 w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-800">
+		<div
+			class="mx-4 w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-800"
+		>
 			<div class="mb-4 flex items-center space-x-3">
 				<div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/10">
 					<i class="fas fa-exclamation-triangle text-red-500 dark:text-red-400"></i>
@@ -330,7 +358,9 @@
 			</div>
 
 			<p class="mb-6 text-gray-700 dark:text-gray-300">
-				Are you sure you want to delete <strong class="text-gray-900 dark:text-white">"{promptToDelete.name}"</strong>?
+				Are you sure you want to delete <strong class="text-gray-900 dark:text-white"
+					>"{promptToDelete.name}"</strong
+				>?
 			</p>
 
 			<div class="flex justify-end space-x-3">

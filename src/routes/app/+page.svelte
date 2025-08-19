@@ -98,10 +98,10 @@
 	class="min-h-screen bg-gradient-to-br from-gray-100 via-gray-200 to-gray-300 dark:from-gray-900 dark:via-gray-950 dark:to-black"
 >
 	<!-- Theme Toggle -->
-	<div class="absolute top-4 right-4 z-10">
+	<div class="absolute right-4 top-4 z-10">
 		<ThemeToggle size="md" />
 	</div>
-	
+
 	{#if isInitializing}
 		<!-- Loading State -->
 		<div class="flex min-h-screen items-center justify-center">
@@ -127,7 +127,9 @@
 				<!-- Header -->
 				<div class="mb-8 text-center">
 					<h1 class="mb-2 text-4xl font-bold text-gray-800 dark:text-white">Welcome Back!</h1>
-					<p class="text-lg text-gray-600 dark:text-gray-400">Choose your organization to continue</p>
+					<p class="text-lg text-gray-600 dark:text-gray-400">
+						Choose your organization to continue
+					</p>
 				</div>
 
 				<!-- Search Bar -->
@@ -213,7 +215,9 @@
 								{/if}
 
 								<!-- Metadata -->
-								<div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+								<div
+									class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400"
+								>
 									<span class="flex items-center">
 										<svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path
@@ -344,7 +348,10 @@
 
 		<form id="create-org-form" on:submit={handleCreateOrganization} class="space-y-6">
 			<div>
-				<label for="org-name" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+				<label
+					for="org-name"
+					class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+				>
 					Organization Name
 				</label>
 				<input
@@ -359,7 +366,10 @@
 			</div>
 
 			<div>
-				<label for="org-description" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+				<label
+					for="org-description"
+					class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+				>
 					Description
 				</label>
 				<textarea

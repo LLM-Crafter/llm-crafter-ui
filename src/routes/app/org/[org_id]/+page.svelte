@@ -45,7 +45,9 @@
 				</div>
 				<div>
 					<h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">Projects</h1>
-					<p class="text-gray-600 dark:text-gray-400">Manage your AI projects and collaborate with your team</p>
+					<p class="text-gray-600 dark:text-gray-400">
+						Manage your AI projects and collaborate with your team
+					</p>
 				</div>
 			</div>
 			<button
@@ -116,11 +118,15 @@
 							{project.description}
 						</p>
 					{:else}
-						<p class="mb-4 text-sm italic text-gray-500 dark:text-gray-500">No description provided</p>
+						<p class="mb-4 text-sm italic text-gray-500 dark:text-gray-500">
+							No description provided
+						</p>
 					{/if}
 
 					<!-- Metadata -->
-					<div class="mb-4 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+					<div
+						class="mb-4 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400"
+					>
 						<span class="flex items-center">
 							<svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path
@@ -190,7 +196,9 @@
 					>
 						<i class="fas fa-folder text-2xl text-white"></i>
 					</div>
-					<h3 class="mb-2 text-2xl font-semibold text-gray-800 dark:text-gray-100">No Projects Yet</h3>
+					<h3 class="mb-2 text-2xl font-semibold text-gray-800 dark:text-gray-100">
+						No Projects Yet
+					</h3>
 					<p class="mb-6 max-w-md text-gray-600 dark:text-gray-400">
 						Get started by creating your first project. Organize your AI prompts, agents, and
 						collaborate with your team.

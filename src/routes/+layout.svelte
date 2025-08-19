@@ -2,9 +2,9 @@
 	import '../app.css';
 	import { onMount } from 'svelte';
 	import { theme } from '$lib/stores/theme';
-	
+
 	let { children } = $props();
-	
+
 	// Initialize theme on mount
 	onMount(() => {
 		// Apply initial theme class

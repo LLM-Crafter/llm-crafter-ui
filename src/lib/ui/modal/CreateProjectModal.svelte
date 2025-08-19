@@ -35,7 +35,9 @@
 <!-- BACKDROP -->
 <div class="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-70">
 	<!-- MODAL -->
-	<div class="w-full max-w-lg rounded-lg border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-700 dark:bg-gray-800">
+	<div
+		class="w-full max-w-lg rounded-lg border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-700 dark:bg-gray-800"
+	>
 		<h2 class="mb-4 text-xl font-bold text-gray-800 dark:text-white">Create Project</h2>
 
 		<form on:submit|preventDefault={createProject}>
@@ -51,7 +53,9 @@
 				/>
 			</div>
 			<div class="mb-4">
-				<label class="mb-1 block text-sm text-gray-700 dark:text-gray-300" for="description">Description</label>
+				<label class="mb-1 block text-sm text-gray-700 dark:text-gray-300" for="description"
+					>Description</label
+				>
 				<textarea
 					id="description"
 					bind:value={description}

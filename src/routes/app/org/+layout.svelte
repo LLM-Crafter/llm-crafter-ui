@@ -221,7 +221,13 @@
 							<i class="fas fa-bars"></i>
 						</button>
 					{/if}
-					<h1 class="{isMobile ? 'text-xl' : 'text-2xl'} font-semibold text-gray-800 dark:text-gray-100">Projects</h1>
+					<h1
+						class="{isMobile
+							? 'text-xl'
+							: 'text-2xl'} font-semibold text-gray-800 dark:text-gray-100"
+					>
+						Projects
+					</h1>
 				</div>
 				<div class="flex items-center {isMobile ? 'space-x-2' : 'space-x-4'}">
 					<!-- Organization Switcher -->
@@ -234,7 +240,11 @@
 								: 'px-4 py-2'} text-gray-800 transition-colors duration-200 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
 							title="Organization options"
 						>
-							<i class="fas fa-building {isMobile ? 'text-xs' : 'text-sm'} text-gray-500 dark:text-gray-400"></i>
+							<i
+								class="fas fa-building {isMobile
+									? 'text-xs'
+									: 'text-sm'} text-gray-500 dark:text-gray-400"
+							></i>
 							<span class="hidden sm:inline {isMobile ? 'text-sm' : ''}">{orgName}</span>
 							<span class="sm:hidden {isMobile ? 'text-sm' : ''}">{shortOrgName}</span>
 							<svg
@@ -273,7 +283,9 @@
 											{orgName.charAt(0).toUpperCase()}
 										</div>
 										<div class="min-w-0 flex-1">
-											<p class="truncate text-sm font-medium text-gray-800 dark:text-gray-100">{orgName}</p>
+											<p class="truncate text-sm font-medium text-gray-800 dark:text-gray-100">
+												{orgName}
+											</p>
 											<p class="text-xs text-gray-500 dark:text-gray-400">Current organization</p>
 										</div>
 									</div>
@@ -302,7 +314,11 @@
 											? 'px-3 py-2 text-sm'
 											: 'px-4 py-2'} text-left text-gray-700 transition-colors duration-200 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
 									>
-										<i class="fas fa-cog {isMobile ? 'text-xs' : 'text-sm'} mr-3 text-gray-500 dark:text-gray-400"></i>
+										<i
+											class="fas fa-cog {isMobile
+												? 'text-xs'
+												: 'text-sm'} mr-3 text-gray-500 dark:text-gray-400"
+										></i>
 										<span>Organization Settings</span>
 									</button>
 								</div>
@@ -352,7 +368,8 @@
 										on:click={openProfileModal}
 										class="flex w-full {isMobile
 											? 'px-3 py-2 text-sm'
-											: 'px-4 py-2'} text-left text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">Profile</button
+											: 'px-4 py-2'} text-left text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+										>Profile</button
 									>
 								</li>
 								<li>
@@ -360,13 +377,18 @@
 										type="button"
 										class="flex w-full {isMobile
 											? 'px-3 py-2 text-sm'
-											: 'px-4 py-2'} text-left text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">Settings</button
+											: 'px-4 py-2'} text-left text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+										>Settings</button
 									>
 								</li>
 								<!-- Theme Toggle -->
 								<li class="border-t border-gray-200 pt-2 dark:border-gray-600">
-									<div class="flex items-center justify-between {isMobile ? 'px-3 py-2' : 'px-4 py-2'}">
-										<span class="text-gray-700 dark:text-gray-300 {isMobile ? 'text-sm' : ''}">Theme</span>
+									<div
+										class="flex items-center justify-between {isMobile ? 'px-3 py-2' : 'px-4 py-2'}"
+									>
+										<span class="text-gray-700 dark:text-gray-300 {isMobile ? 'text-sm' : ''}"
+											>Theme</span
+										>
 										<ThemeToggle size="sm" />
 									</div>
 								</li>
@@ -376,7 +398,8 @@
 										data-sveltekit-reload
 										class="flex {isMobile
 											? 'px-3 py-2 text-sm'
-											: 'px-4 py-2'} text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700">Log Out</a
+											: 'px-4 py-2'} text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+										>Log Out</a
 									>
 								</li>
 							</ul>

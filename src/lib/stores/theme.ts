@@ -6,15 +6,15 @@ export type Theme = 'light' | 'dark';
 // Get initial theme from localStorage or default to 'dark'
 function getInitialTheme(): Theme {
 	if (!browser) return 'dark';
-	
+
 	const stored = localStorage.getItem('theme') as Theme;
 	if (stored) return stored;
-	
+
 	// Check system preference
 	if (window.matchMedia('(prefers-color-scheme: light)').matches) {
 		return 'light';
 	}
-	
+
 	return 'dark';
 }
 
@@ -25,7 +25,7 @@ export const theme = writable<Theme>(getInitialTheme());
 if (browser) {
 	theme.subscribe((value) => {
 		localStorage.setItem('theme', value);
-		
+
 		// Update document class for Tailwind dark mode
 		if (value === 'dark') {
 			document.documentElement.classList.add('dark');
@@ -33,7 +33,7 @@ if (browser) {
 			document.documentElement.classList.remove('dark');
 		}
 	});
-	
+
 	// Listen for system theme changes
 	const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 	mediaQuery.addEventListener('change', (e) => {
@@ -46,5 +46,5 @@ if (browser) {
 
 // Helper function to toggle theme
 export function toggleTheme() {
-	theme.update(current => current === 'dark' ? 'light' : 'dark');
+	theme.update((current) => (current === 'dark' ? 'light' : 'dark'));
 }
