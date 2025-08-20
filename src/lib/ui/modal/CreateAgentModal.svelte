@@ -38,6 +38,11 @@
 			id: 'api_caller',
 			name: 'API Caller',
 			description: 'Make secure API calls to pre-configured endpoints'
+		},
+		{
+			id: 'faq',
+			name: 'FAQ',
+			description: 'Answer questions using configured frequently asked questions'
 		}
 	];
 
@@ -75,6 +80,8 @@
 				return 'fas fa-code';
 			case 'api_caller':
 				return 'fas fa-plug';
+			case 'faq':
+				return 'fas fa-question-circle';
 			default:
 				return 'fas fa-tools';
 		}
@@ -94,6 +101,8 @@
 				return 'from-gray-500 to-slate-500';
 			case 'api_caller':
 				return 'from-red-500 to-pink-500';
+			case 'faq':
+				return 'from-cyan-500 to-teal-500';
 			default:
 				return 'from-indigo-500 to-purple-600';
 		}

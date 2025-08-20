@@ -6,6 +6,7 @@
 	import ExecuteAgentModal from '$lib/ui/modal/ExecuteAgentModal.svelte';
 	import EditAgentModal from '$lib/ui/modal/EditAgentModal.svelte';
 	import ConfigureApiEndpointsModal from '$lib/ui/modal/ConfigureApiEndpointsModal.svelte';
+	import ConfigureFaqModal from '$lib/ui/modal/ConfigureFaqModal.svelte';
 	import type { AgentStatistics } from '$lib/api';
 
 	export let data;
@@ -19,6 +20,7 @@
 	let showExecuteModal = false;
 	let showEditModal = false;
 	let showApiConfigModal = false;
+	let showFaqConfigModal = false;
 	let selectedStatsPeriod: '1d' | '1w' | '1m' = '1d';
 	let activeTab = 'overview'; // 'overview', 'conversations', 'executions', 'statistics'
 
@@ -151,6 +153,8 @@
 				return 'fas fa-code';
 			case 'api_caller':
 				return 'fas fa-plug';
+			case 'faq':
+				return 'fas fa-question-circle';
 			default:
 				return 'fas fa-tools';
 		}
@@ -170,6 +174,8 @@
 				return 'text-gray-600 bg-gray-500/20 dark:text-gray-400';
 			case 'api_caller':
 				return 'text-red-600 bg-red-500/20 dark:text-red-400';
+			case 'faq':
+				return 'text-cyan-600 bg-cyan-500/20 dark:text-cyan-400';
 			default:
 				return 'text-indigo-600 bg-indigo-500/20 dark:text-indigo-400';
 		}
@@ -295,6 +301,16 @@
 						>
 							<i class="fas fa-plug"></i>
 							<span>Configure APIs</span>
+						</button>
+					{/if}
+
+					{#if agent.tools && agent.tools.map((tool) => tool.name).includes('faq')}
+						<button
+							on:click={() => (showFaqConfigModal = true)}
+							class="flex items-center space-x-2 rounded-lg border border-cyan-300 bg-cyan-600 px-4 py-2.5 text-white transition-colors hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 dark:border-cyan-700"
+						>
+							<i class="fas fa-question-circle"></i>
+							<span>Configure FAQ</span>
 						</button>
 					{/if}
 				</div>
@@ -593,7 +609,7 @@
 				</select>
 			</div>
 
-			{#if statistics}
+			{#if false}
 				<!-- Statistics Overview Cards -->
 				<div class="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
 					<div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
@@ -609,7 +625,7 @@
 										Total Executions
 									</dt>
 									<dd class="text-lg font-medium text-gray-900 dark:text-white">
-										{formatNumber(statistics.overview.totalExecutions)}
+										{formatNumber(statistics.overview?.totalExecutions || 0)}
 									</dd>
 								</dl>
 							</div>
@@ -629,7 +645,7 @@
 										Success Rate
 									</dt>
 									<dd class="text-lg font-medium text-gray-900 dark:text-white">
-										{statistics.overview.successRate.toFixed(1)}%
+										{statistics.overview?.successRate.toFixed(1)}%
 									</dd>
 								</dl>
 							</div>
@@ -649,7 +665,7 @@
 										Avg Execution Time
 									</dt>
 									<dd class="text-lg font-medium text-gray-900 dark:text-white">
-										{formatDuration(statistics.overview.averageExecutionTime)}
+										{formatDuration(statistics.overvie?.averageExecutionTime)}
 									</dd>
 								</dl>
 							</div>
@@ -717,7 +733,7 @@
 							Recent Performance
 						</h3>
 						<div class="space-y-3">
-							{#each statistics.recentExecutions.slice(0, 5) as execution}
+							{#each statistics.recentExecutions?.slice(0, 5) as execution}
 								<div
 									class="flex items-center justify-between border-b border-gray-200 pb-3 last:border-b-0 dark:border-gray-700"
 								>
@@ -784,5 +800,10 @@
 	<!-- API Configuration Modal -->
 	{#if showApiConfigModal}
 		<ConfigureApiEndpointsModal {data} {agent} on:close={() => (showApiConfigModal = false)} />
+	{/if}
+
+	<!-- FAQ Configuration Modal -->
+	{#if showFaqConfigModal}
+		<ConfigureFaqModal {data} {agent} on:close={() => (showFaqConfigModal = false)} />
 	{/if}
 {/if}
