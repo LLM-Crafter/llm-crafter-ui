@@ -13,6 +13,7 @@
 	let showContextForm = false;
 	let contextInput = '';
 	let contextError = '';
+	let currentSuggestions = []; // Track current suggestions to display
 
 	function getToolIcon(toolId) {
 		switch (toolId) {
@@ -78,6 +79,7 @@
 		messages = [...messages, userMessage];
 		const messageToSend = currentMessage;
 		currentMessage = '';
+		currentSuggestions = []; // Clear suggestions when user sends a message
 		loading = true;
 
 		try {
@@ -112,6 +114,13 @@
 			};
 
 			messages = [...messages, botMessage];
+
+			// Update current suggestions to display separately
+			if (response.suggestions && response.suggestions.length > 0) {
+				currentSuggestions = response.suggestions;
+			} else {
+				currentSuggestions = [];
+			}
 		} catch (error) {
 			console.error('Failed to send message:', error);
 			const errorMessage = {
@@ -137,6 +146,12 @@
 			hour: '2-digit',
 			minute: '2-digit'
 		});
+	}
+
+	function sendSuggestion(suggestionText) {
+		currentMessage = suggestionText;
+		currentSuggestions = []; // Clear suggestions when clicked
+		sendMessage();
 	}
 
 	function toggleContextForm() {
@@ -304,6 +319,39 @@
 				</div>
 			{/if}
 		</div>
+
+		<!-- Question Suggestions -->
+		{#if currentSuggestions && currentSuggestions.length > 0}
+			<div class="border-t border-gray-800 bg-gray-900/50 px-4 py-3">
+				<div class="mb-3 flex items-center justify-between">
+					<div class="flex items-center space-x-2">
+						<i class="fas fa-lightbulb text-sm text-yellow-400"></i>
+						<span class="text-sm font-medium text-gray-300">Try asking:</span>
+					</div>
+					<button
+						on:click={() => (currentSuggestions = [])}
+						class="text-xs text-gray-400 transition-colors hover:text-gray-300"
+						title="Dismiss suggestions"
+						aria-label="Dismiss suggestions"
+					>
+						<i class="fas fa-times"></i>
+					</button>
+				</div>
+				<div class="flex flex-wrap gap-2">
+					{#each currentSuggestions as suggestion, index}
+						<button
+							on:click={() => sendSuggestion(suggestion)}
+							disabled={loading}
+							class="inline-flex items-center rounded-lg border border-gray-600 bg-gradient-to-r from-gray-700 to-gray-600 px-4 py-2 text-sm text-gray-200 shadow-sm transition-all hover:from-gray-600 hover:to-gray-500 hover:text-white hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+							style="animation-delay: {index * 100}ms"
+						>
+							<i class="fas fa-comment-dots mr-2 text-xs text-gray-400"></i>
+							{suggestion}
+						</button>
+					{/each}
+				</div>
+			</div>
+		{/if}
 
 		<!-- Context Form (Optional) -->
 		<div class="border-t border-gray-800">

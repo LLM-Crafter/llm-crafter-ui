@@ -21,13 +21,27 @@
 	let temperature = 0.7;
 	let maxTokens = 1000;
 
+	// Tools
+	let selectedTools = [];
+
+	// Question Suggestions
+	let suggestionsEnabled = false;
+	let suggestionsCount = 3;
+	let suggestionsApiKeyId = '';
+	let suggestionsModel = '';
+	let suggestionsCustomPrompt = '';
+
 	// Derived provider based on selected API key
 	$: provider = apiKeyId
 		? (data.project as any).apiKeys?.find((api_key: any) => api_key._id === apiKeyId)?.provider
 		: null;
 
-	// Tools
-	let selectedTools = [];
+	// Derived provider for suggestions API key
+	$: suggestionsProvider = suggestionsApiKeyId
+		? (data.project as any).apiKeys?.find((api_key: any) => api_key._id === suggestionsApiKeyId)
+				?.provider
+		: null;
+
 	const availableTools = [
 		{ id: 'web_search', name: 'Web Search', description: 'Search the internet for information' },
 		{ id: 'calculator', name: 'Calculator', description: 'Perform mathematical calculations' },
@@ -47,7 +61,7 @@
 	];
 
 	function nextStep() {
-		if (step < 3) {
+		if (step < 4) {
 			step++;
 		}
 	}
@@ -158,7 +172,15 @@
 					}
 				},
 				tools: selectedTools,
-				is_active: true
+				is_active: true,
+				question_suggestions: {
+					enabled: suggestionsEnabled,
+					count: suggestionsCount,
+					api_key: suggestionsEnabled ? suggestionsApiKeyId : null,
+					model: suggestionsEnabled ? suggestionsModel : null,
+					custom_prompt:
+						suggestionsEnabled && suggestionsCustomPrompt.trim() ? suggestionsCustomPrompt : null
+				}
 			};
 
 			const res = await api.fetch(
@@ -191,6 +213,12 @@
 				return model !== '' && systemPrompt.trim() !== '' && apiKeyId !== '';
 			case 3:
 				return true; // Tools are optional
+			case 4:
+				// Suggestions validation
+				if (suggestionsEnabled) {
+					return suggestionsApiKeyId !== '' && suggestionsModel !== '';
+				}
+				return true; // Suggestions are optional
 			default:
 				return false;
 		}
@@ -225,7 +253,7 @@
 
 			<!-- Progress Steps -->
 			<div class="mt-6 flex items-center space-x-4">
-				{#each ['Basic Info', 'Configuration', 'Tools'] as stepName, index}
+				{#each ['Basic Info', 'Configuration', 'Tools', 'Suggestions'] as stepName, index}
 					<div class="flex items-center">
 						<div class="flex items-center space-x-2">
 							<div
@@ -243,7 +271,7 @@
 								{stepName}
 							</span>
 						</div>
-						{#if index < 2}
+						{#if index < 3}
 							<div class="ml-4 h-0.5 w-8 {step > index + 1 ? 'bg-green-600' : 'bg-gray-700'}"></div>
 						{/if}
 					</div>
@@ -497,6 +525,173 @@
 						</div>
 					{/if}
 				</div>
+			{:else if step === 4}
+				<!-- Step 4: Question Suggestions Configuration -->
+				<div class="space-y-6">
+					<div class="text-center">
+						<h3 class="text-lg font-semibold text-gray-100">Question Suggestions</h3>
+						<p class="text-sm text-gray-400">
+							Configure smart question suggestions to help users interact with your agent
+						</p>
+					</div>
+
+					<!-- Enable/Disable Toggle -->
+					<div
+						class="flex items-center justify-between rounded-lg border border-gray-700 bg-gray-800 p-4"
+					>
+						<div>
+							<h4 class="font-medium text-gray-100">Enable Question Suggestions</h4>
+							<p class="text-sm text-gray-400">
+								Generate helpful follow-up questions based on conversations
+							</p>
+						</div>
+						<label class="relative inline-flex cursor-pointer items-center">
+							<input
+								type="checkbox"
+								bind:checked={suggestionsEnabled}
+								disabled={loading}
+								class="peer sr-only"
+							/>
+							<div
+								class="peer h-6 w-11 rounded-full bg-gray-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-indigo-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300"
+							></div>
+						</label>
+					</div>
+
+					{#if suggestionsEnabled}
+						<!-- Suggestions Configuration -->
+						<div class="space-y-6 rounded-lg border border-gray-700 bg-gray-800/50 p-6">
+							<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+								<div>
+									<label
+										class="mb-2 block text-sm font-medium text-gray-300"
+										for="suggestions-api-key"
+									>
+										Suggestions API Key *
+									</label>
+									{#if (data.project as any).apiKeys && (data.project as any).apiKeys.length > 0}
+										<select
+											id="suggestions-api-key"
+											bind:value={suggestionsApiKeyId}
+											disabled={loading}
+											class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-gray-100 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+										>
+											<option value="">Select API key...</option>
+											{#each (data.project as any).apiKeys as apiKey}
+												<option value={apiKey._id}>{apiKey.name}</option>
+											{/each}
+										</select>
+										<p class="mt-1 text-xs text-gray-500">
+											Can be different from main agent API key
+										</p>
+									{:else}
+										<div
+											class="rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-gray-400"
+										>
+											No API keys configured for this project
+										</div>
+									{/if}
+								</div>
+
+								{#if suggestionsProvider}
+									<div>
+										<label
+											class="mb-2 block text-sm font-medium text-gray-300"
+											for="suggestions-model"
+										>
+											Suggestions Model *
+										</label>
+										<select
+											id="suggestions-model"
+											bind:value={suggestionsModel}
+											disabled={loading}
+											class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-gray-100 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+										>
+											<option value="">Select a model</option>
+											{#each suggestionsProvider.models as modelOption}
+												<option value={modelOption}>{modelOption}</option>
+											{/each}
+										</select>
+										<p class="mt-1 text-xs text-gray-500">Can be different from main agent model</p>
+									</div>
+								{/if}
+							</div>
+
+							<div>
+								<label class="mb-2 block text-sm font-medium text-gray-300" for="suggestions-count">
+									Number of Suggestions: {suggestionsCount}
+								</label>
+								<input
+									id="suggestions-count"
+									type="range"
+									min="1"
+									max="5"
+									step="1"
+									bind:value={suggestionsCount}
+									disabled={loading}
+									class="w-full"
+								/>
+								<div class="mt-1 flex justify-between text-xs text-gray-500">
+									<span>1 question</span>
+									<span>5 questions</span>
+								</div>
+							</div>
+
+							<div>
+								<label
+									class="mb-2 block text-sm font-medium text-gray-300"
+									for="suggestions-custom-prompt"
+								>
+									Custom Prompt (Optional)
+								</label>
+								<textarea
+									id="suggestions-custom-prompt"
+									bind:value={suggestionsCustomPrompt}
+									placeholder="Generate helpful questions about {`{count}`} topics related to the conversation..."
+									rows="3"
+									disabled={loading}
+									class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-gray-100 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+								></textarea>
+								<p class="mt-1 text-xs text-gray-500">
+									Use {`{count}`} as placeholder for the number of questions. If empty, default prompt
+									will be used.
+								</p>
+							</div>
+						</div>
+
+						<!-- Suggestions Preview -->
+						<div class="rounded-lg bg-blue-500/10 p-4">
+							<div class="flex items-start space-x-3">
+								<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500">
+									<i class="fas fa-lightbulb text-sm text-white"></i>
+								</div>
+								<div>
+									<h4 class="font-medium text-blue-400">How suggestions work</h4>
+									<p class="text-sm text-blue-300">
+										After each conversation, your agent will generate {suggestionsCount} relevant follow-up
+										questions to help users continue the conversation naturally.
+									</p>
+								</div>
+							</div>
+						</div>
+					{:else}
+						<!-- Suggestions Disabled Info -->
+						<div class="rounded-lg bg-gray-500/10 p-4">
+							<div class="flex items-start space-x-3">
+								<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-500">
+									<i class="fas fa-info-circle text-sm text-white"></i>
+								</div>
+								<div>
+									<h4 class="font-medium text-gray-400">Suggestions Disabled</h4>
+									<p class="text-sm text-gray-500">
+										Question suggestions are turned off. You can enable them later in agent
+										settings.
+									</p>
+								</div>
+							</div>
+						</div>
+					{/if}
+				</div>
 			{/if}
 
 			{#if error}
@@ -536,7 +731,7 @@
 						Cancel
 					</button>
 
-					{#if step < 3}
+					{#if step < 4}
 						<button
 							type="button"
 							on:click={nextStep}
