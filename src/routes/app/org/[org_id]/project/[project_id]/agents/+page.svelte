@@ -3,34 +3,53 @@
 	import { api } from '$lib/api.js';
 	import { onMount } from 'svelte';
 	import { theme } from '$lib/stores/theme';
+	import EnhancedCard from '$lib/ui/EnhancedCard.svelte';
+	import SkeletonLoader from '$lib/ui/SkeletonLoader.svelte';
 	import CreateAgentModal from '$lib/ui/modal/CreateAgentModal.svelte';
 	import EditAgentModal from '$lib/ui/modal/EditAgentModal.svelte';
 	import ChatAgentModal from '$lib/ui/modal/ChatAgentModal.svelte';
 	import ExecuteAgentModal from '$lib/ui/modal/ExecuteAgentModal.svelte';
 
-	export let data;
+	export let data: any;
 
 	let showCreateModal = false;
 	let showEditModal = false;
 	let showDeleteModal = false;
 	let showChatModal = false;
 	let showExecuteModal = false;
-	let selectedAgent = null;
-	let agentToDelete = null;
-	let chatAgent = null;
-	let executeAgent = null;
+	let selectedAgent: any = null;
+	let agentToDelete: any = null;
+	let chatAgent: any = null;
+	let executeAgent: any = null;
 	let searchTerm = '';
 	let filterType = 'all';
-	let agents = [];
+	let sortBy = 'name';
+	let sortOrder = 'asc';
+	let agents: any[] = [];
 	let loading = true;
+	let isLoading = false;
+	let searchDebounceTimeout: any;
 
 	$: filteredAgents = agents
-		.filter((agent) => {
+		.filter((agent: any) => {
 			const matchesSearch = agent.name.toLowerCase().includes(searchTerm.toLowerCase());
 			const matchesType = filterType === 'all' || agent.type === filterType;
 			return matchesSearch && matchesType;
 		})
-		.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+		.sort((a: any, b: any) => {
+			const aVal = a[sortBy]?.toLowerCase() || '';
+			const bVal = b[sortBy]?.toLowerCase() || '';
+			return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+		});
+
+	// Debounced search to improve performance
+	function handleSearch(event: Event) {
+		const target = event.target as HTMLInputElement;
+		clearTimeout(searchDebounceTimeout);
+		searchDebounceTimeout = setTimeout(() => {
+			searchTerm = target.value;
+		}, 300);
+	}
 
 	onMount(async () => {
 		await loadAgents();
@@ -60,7 +79,7 @@
 		showCreateModal = false;
 	}
 
-	function openEditModal(agent) {
+	function openEditModal(agent: any) {
 		selectedAgent = agent;
 		showEditModal = true;
 	}
@@ -70,7 +89,7 @@
 		selectedAgent = null;
 	}
 
-	function openChatModal(agent) {
+	function openChatModal(agent: any) {
 		chatAgent = agent;
 		showChatModal = true;
 	}
@@ -80,7 +99,7 @@
 		chatAgent = null;
 	}
 
-	function openExecuteModal(agent) {
+	function openExecuteModal(agent: any) {
 		executeAgent = agent;
 		showExecuteModal = true;
 	}
@@ -90,7 +109,7 @@
 		executeAgent = null;
 	}
 
-	function openDeleteModal(agent) {
+	function openDeleteModal(agent: any) {
 		agentToDelete = agent;
 		showDeleteModal = true;
 	}
@@ -100,41 +119,12 @@
 		agentToDelete = null;
 	}
 
-	function getToolIcon(toolId) {
-		switch (toolId) {
-			case 'web_search':
-				return 'fas fa-search';
-			case 'calculator':
-				return 'fas fa-calculator';
-			case 'llm_prompt':
-				return 'fas fa-brain';
-			case 'current_time':
-				return 'fas fa-clock';
-			case 'json_processor':
-				return 'fas fa-code';
-			case 'api_caller':
-				return 'fas fa-plug';
-			default:
-				return 'fas fa-tools';
-		}
-	}
-
-	function getToolColor(toolId) {
-		switch (toolId) {
-			case 'web_search':
-				return 'text-blue-400 bg-blue-500/10';
-			case 'calculator':
-				return 'text-green-400 bg-green-500/10';
-			case 'llm_prompt':
-				return 'text-purple-400 bg-purple-500/10';
-			case 'current_time':
-				return 'text-yellow-400 bg-yellow-500/10';
-			case 'json_processor':
-				return 'text-gray-400 bg-gray-500/10';
-			case 'api_caller':
-				return 'text-red-400 bg-red-500/10';
-			default:
-				return 'text-indigo-400 bg-indigo-500/10';
+	function toggleSort(field: string) {
+		if (sortBy === field) {
+			sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+		} else {
+			sortBy = field;
+			sortOrder = 'asc';
 		}
 	}
 
@@ -150,6 +140,7 @@
 
 	async function confirmDelete() {
 		if (agentToDelete) {
+			isLoading = true;
 			try {
 				const response = await api.fetch(
 					`/organizations/${data.organization_id}/projects/${data.project._id}/agents/${agentToDelete._id}`,
@@ -162,12 +153,27 @@
 				}
 			} catch (error) {
 				console.error('Failed to delete agent:', error);
+			} finally {
+				isLoading = false;
 			}
 		}
 		closeDeleteModal();
 	}
 
-	function formatDate(dateString) {
+	async function duplicateAgent(agent: any) {
+		isLoading = true;
+		try {
+			// Implementation for duplicating agent
+			console.log('Duplicating agent:', agent.name);
+			// Add your duplicate logic here
+		} catch (error) {
+			console.error('Error duplicating agent:', error);
+		} finally {
+			isLoading = false;
+		}
+	}
+
+	function formatDate(dateString: string) {
 		if (!dateString) return 'N/A';
 		return new Date(dateString).toLocaleDateString('en-US', {
 			year: 'numeric',
@@ -176,406 +182,347 @@
 		});
 	}
 
-	function getAgentTypeIcon(type) {
-		switch (type) {
-			case 'chatbot':
-				return 'fas fa-comments';
-			case 'task':
-				return 'fas fa-tasks';
-			case 'workflow':
-				return 'fas fa-sitemap';
-			case 'api':
-				return 'fas fa-code';
-			default:
-				return 'fas fa-robot';
-		}
-	}
-
-	function getAgentTypeColor(type) {
-		switch (type) {
-			case 'chatbot':
-				return 'from-blue-500 to-cyan-500';
-			case 'task':
-				return 'from-green-500 to-emerald-500';
-			case 'workflow':
-				return 'from-purple-500 to-pink-500';
-			case 'api':
-				return 'from-orange-500 to-red-500';
-			default:
-				return 'from-gray-500 to-gray-600';
-		}
+	function getAgentStatus(agent: any): 'active' | 'inactive' {
+		return agent.is_active ? 'active' : 'inactive';
 	}
 </script>
 
-<div class="min-h-screen">
-	<!-- Hero Section -->
-	<div class="mb-8">
-		<div class="flex items-center justify-between">
-			<div class="flex items-center space-x-4">
-				<div
-					class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600"
-				>
-					<i class="fas fa-robot text-xl text-white"></i>
-				</div>
-				<div>
-					<h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">AI Agents</h1>
-					<p class="text-gray-600 dark:text-gray-400">
-						Manage intelligent agents for {data.project.name}
-					</p>
-				</div>
-			</div>
-			<div class="flex space-x-3">
-				<button
-					on:click={openCreateModal}
-					class="flex items-center space-x-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2.5 text-white transition-all hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-				>
-					<i class="fas fa-plus"></i>
-					<span>Create Agent</span>
-				</button>
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+	<!-- Loading indicator -->
+	{#if isLoading}
+		<div class="fixed right-4 top-4 z-40">
+			<div
+				class="flex items-center space-x-2 rounded-lg bg-white/90 px-4 py-2 shadow-lg backdrop-blur-sm dark:bg-gray-800/90"
+			>
+				<i class="fas fa-spinner animate-spin text-blue-500"></i>
+				<span class="text-sm font-medium text-gray-700 dark:text-gray-300">Processing...</span>
 			</div>
 		</div>
+	{/if}
 
-		<!-- Breadcrumb -->
-		<nav class="mt-4 flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-			<a href="/app/org/{data.organization_id}" class="hover:text-gray-700 dark:hover:text-gray-300"
-				>Projects</a
-			>
-			<i class="fas fa-chevron-right text-xs"></i>
-			<a
-				href="/app/org/{data.organization_id}/project/{data.project._id}"
-				class="hover:text-gray-700 dark:hover:text-gray-300">{data.project.name}</a
-			>
-			<i class="fas fa-chevron-right text-xs"></i>
-			<span class="text-gray-800 dark:text-gray-200">Agents</span>
-		</nav>
-	</div>
+	<div class="mx-auto px-4 py-8 sm:px-6 lg:px-8">
+		<!-- Enhanced Hero Section -->
+		<div class="mb-8">
+			<div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+				<div class="flex items-center space-x-4">
+					<div
+						class="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-500 shadow-lg"
+					>
+						<i class="fas fa-robot text-2xl text-white"></i>
+					</div>
+					<div>
+						<h1 class="text-4xl font-bold text-gray-800 dark:text-gray-100">AI Agents</h1>
+						<p class="text-lg text-gray-600 dark:text-gray-400">
+							Manage intelligent agents for automated tasks and conversations
+						</p>
+					</div>
+				</div>
+				<div class="flex flex-wrap gap-3">
+					<a
+						href="/app/org/{data.organization_id}/project/{data.project._id}"
+						class="flex items-center space-x-2 rounded-lg border border-gray-300 bg-white px-4 py-3 font-medium text-gray-700 transition-all hover:scale-105 hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+					>
+						<i class="fas fa-magic"></i>
+						<span>Prompts</span>
+					</a>
+					<a
+						href="/app/org/{data.organization_id}/project/{data.project._id}/config"
+						class="flex items-center space-x-2 rounded-lg border border-gray-300 bg-white px-4 py-3 font-medium text-gray-700 transition-all hover:scale-105 hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+					>
+						<i class="fas fa-cog"></i>
+						<span>Settings</span>
+					</a>
+					<button
+						on:click={openCreateModal}
+						class="flex items-center space-x-2 rounded-lg bg-indigo-600 px-6 py-3 font-medium text-white shadow-lg transition-all hover:scale-105 hover:bg-indigo-700 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+					>
+						<i class="fas fa-plus"></i>
+						<span>New Agent</span>
+					</button>
+				</div>
+			</div>
 
-	<!-- Navigation Tabs -->
-	<div class="mb-8">
-		<div class="border-b border-gray-200 dark:border-gray-700">
-			<nav class="-mb-px flex space-x-8">
+			<!-- Enhanced Breadcrumb -->
+			<nav class="mt-6 flex items-center space-x-2 text-sm">
+				<a
+					href="/app/org/{data.organization_id}"
+					class="flex items-center space-x-1 text-gray-500 transition-colors hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+				>
+					<i class="fas fa-home text-xs"></i>
+					<span>Projects</span>
+				</a>
+				<i class="fas fa-chevron-right text-xs text-gray-400"></i>
 				<a
 					href="/app/org/{data.organization_id}/project/{data.project._id}"
-					class="flex items-center space-x-2 border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300"
+					class="text-gray-500 transition-colors hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
 				>
-					<i class="fas fa-magic"></i>
-					<span>Prompts</span>
+					{data.project.name}
 				</a>
-				<a
-					href="/app/org/{data.organization_id}/project/{data.project._id}/agents"
-					class="flex items-center space-x-2 border-b-2 border-indigo-500 px-1 py-4 text-sm font-medium text-indigo-600 dark:text-indigo-400"
-				>
-					<i class="fas fa-robot"></i>
-					<span>AI Agents</span>
-				</a>
+				<i class="fas fa-chevron-right text-xs text-gray-400"></i>
+				<span class="font-medium text-gray-800 dark:text-gray-200">AI Agents</span>
 			</nav>
 		</div>
-	</div>
 
-	<!-- Statistics Cards -->
-	<div class="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-		<div
-			class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
-		>
-			<div class="flex items-center justify-between">
-				<div>
-					<p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Agents</p>
-					<p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{agents.length}</p>
-				</div>
-				<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-500/10">
-					<i class="fas fa-robot text-indigo-600 dark:text-indigo-400"></i>
-				</div>
-			</div>
-		</div>
-		<div
-			class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
-		>
-			<div class="flex items-center justify-between">
-				<div>
-					<p class="text-sm font-medium text-gray-600 dark:text-gray-400">Active Agents</p>
-					<p class="text-2xl font-bold text-green-600 dark:text-green-400">
-						{agents.filter((a) => a.is_active).length}
-					</p>
-				</div>
-				<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/10">
-					<i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
-				</div>
-			</div>
-		</div>
-		<div
-			class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
-		>
-			<div class="flex items-center justify-between">
-				<div>
-					<p class="text-sm font-medium text-gray-600 dark:text-gray-400">Chatbots</p>
-					<p class="text-2xl font-bold text-blue-600 dark:text-blue-400">
-						{agents.filter((a) => a.type === 'chatbot').length}
-					</p>
-				</div>
-				<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
-					<i class="fas fa-comments text-blue-600 dark:text-blue-400"></i>
-				</div>
-			</div>
-		</div>
-		<div
-			class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
-		>
-			<div class="flex items-center justify-between">
-				<div>
-					<p class="text-sm font-medium text-gray-600 dark:text-gray-400">Task Agents</p>
-					<p class="text-2xl font-bold text-green-600 dark:text-green-400">
-						{agents.filter((a) => a.type === 'task').length}
-					</p>
-				</div>
-				<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/10">
-					<i class="fas fa-tasks text-green-600 dark:text-green-400"></i>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<!-- Agents Section -->
-	<div class="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-		<!-- Header -->
-		<div class="border-b border-gray-200 p-6 dark:border-gray-700">
-			<div
-				class="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0"
-			>
-				<div>
-					<h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Agent Management</h2>
-					<p class="text-sm text-gray-600 dark:text-gray-400">
-						Create and manage intelligent AI agents
-					</p>
-				</div>
-
-				<!-- Search and Filter -->
-				<div class="flex items-center space-x-3">
-					<div class="relative">
-						<i
-							class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
-						></i>
-						<input
-							type="text"
-							placeholder="Search agents..."
-							bind:value={searchTerm}
-							class="w-64 rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-gray-900 placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
-						/>
-					</div>
-					<select
-						bind:value={filterType}
-						class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+		<!-- Enhanced Navigation Tabs -->
+		<div class="mb-8">
+			<div class="border-b border-gray-200/50 dark:border-gray-700/50">
+				<nav class="-mb-px flex space-x-8">
+					<a
+						href="/app/org/{data.organization_id}/project/{data.project._id}"
+						class="group flex items-center space-x-2 border-b-2 border-transparent px-1 py-4 font-medium text-gray-500 transition-all hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300"
 					>
-						<option value="all">All Types</option>
-						<option value="chatbot">Chatbots</option>
-						<option value="task">Task Agents</option>
-						<option value="workflow">Workflows</option>
-						<option value="api">API Agents</option>
-					</select>
-				</div>
-			</div>
-		</div>
-
-		<!-- Content -->
-		<div class="p-6">
-			{#if loading}
-				<!-- Loading State -->
-				<div class="py-16 text-center">
-					<div
-						class="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent"
-					></div>
-					<p class="text-gray-600 dark:text-gray-400">Loading agents...</p>
-				</div>
-			{:else if filteredAgents.length === 0}
-				<!-- Empty State -->
-				<div class="py-16 text-center">
-					<div
-						class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
-					>
-						<i class="fas fa-robot text-2xl text-gray-400 dark:text-gray-500"></i>
-					</div>
-					<h3 class="mb-2 text-lg font-medium text-gray-800 dark:text-gray-200">
-						{searchTerm || filterType !== 'all' ? 'No agents found' : 'No agents yet'}
-					</h3>
-					<p class="mb-6 text-gray-600 dark:text-gray-400">
-						{searchTerm || filterType !== 'all'
-							? 'Try adjusting your search or filter criteria.'
-							: 'Get started by creating your first AI agent.'}
-					</p>
-					{#if !searchTerm && filterType === 'all'}
-						<button
-							on:click={openCreateModal}
-							class="inline-flex items-center space-x-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-white transition-all hover:from-indigo-700 hover:to-purple-700"
-						>
-							<i class="fas fa-plus"></i>
-							<span>Create Your First Agent</span>
-						</button>
-					{/if}
-				</div>
-			{:else}
-				<!-- Agents Grid -->
-				<div class="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
-					{#each filteredAgents as agent}
 						<div
-							class="group relative rounded-lg border border-gray-200 bg-white p-6 transition-all hover:border-gray-300 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600"
+							class="flex h-6 w-6 items-center justify-center rounded bg-gray-500/10 transition-colors group-hover:bg-gray-500/20"
 						>
-							<!-- Status and Type -->
-							<div class="absolute right-4 top-4 flex items-center space-x-2">
-								<span
-									class="inline-flex items-center rounded-full bg-gradient-to-r {getAgentTypeColor(
-										agent.type
-									)} px-2.5 py-0.5 text-xs font-medium text-white"
-								>
-									<i class="{getAgentTypeIcon(agent.type)} mr-1"></i>
-									{agent.type}
-								</span>
-								{#if agent.is_active}
-									<span
-										class="inline-flex items-center rounded-full bg-green-500/10 px-2.5 py-0.5 text-xs font-medium text-green-600 dark:text-green-400"
-									>
-										<span class="mr-1 h-1.5 w-1.5 rounded-full bg-green-600 dark:bg-green-400"
-										></span>
-										Active
-									</span>
-								{:else}
-									<span
-										class="inline-flex items-center rounded-full bg-gray-500/10 px-2.5 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-400"
-									>
-										<span class="mr-1 h-1.5 w-1.5 rounded-full bg-gray-600 dark:bg-gray-400"></span>
-										Inactive
-									</span>
-								{/if}
-							</div>
-
-							<!-- Content -->
-							<div class="mb-4 mt-8">
-								<a
-									href="/app/org/{data.organization_id}/project/{data.project
-										._id}/agents/{agent._id}"
-									class="mb-2 block text-lg font-semibold text-gray-900 transition-colors hover:text-gray-700 dark:text-gray-100 dark:hover:text-white"
-								>
-									{agent.name}
-								</a>
-								<p class="line-clamp-2 text-sm text-gray-600 dark:text-gray-400">
-									{agent.description || 'No description provided'}
-								</p>
-							</div>
-
-							<!-- Model Info -->
-							{#if agent.llm_settings?.model}
-								<div class="mb-4 rounded-lg bg-gray-50 p-3 dark:bg-gray-700/50">
-									<div class="flex items-center justify-between text-sm">
-										<span class="text-gray-600 dark:text-gray-400">Model:</span>
-										<span class="font-medium text-gray-900 dark:text-gray-200"
-											>{agent.llm_settings.model}</span
-										>
-									</div>
-									{#if agent.llm_settings.parameters?.temperature}
-										<div class="mt-1 flex items-center justify-between text-sm">
-											<span class="text-gray-600 dark:text-gray-400">Temperature:</span>
-											<span class="font-medium text-gray-900 dark:text-gray-200"
-												>{agent.llm_settings.parameters.temperature}</span
-											>
-										</div>
-									{/if}
-								</div>
-							{/if}
-
-							<!-- Tools -->
-							{#if agent.tools && agent.tools.length > 0}
-								<div class="mb-4">
-									<div class="flex flex-wrap gap-1">
-										{#each agent.tools.slice(0, 3).map((tool) => tool.name) as tool}
-											<span
-												class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium {getToolColor(
-													tool
-												)}"
-											>
-												<i class="{getToolIcon(tool)} mr-1"></i>
-												{tool}
-											</span>
-										{/each}
-										{#if agent.tools.length > 3}
-											<span
-												class="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 dark:bg-gray-500/10 dark:text-gray-400"
-											>
-												+{agent.tools.length - 3} more
-											</span>
-										{/if}
-									</div>
-								</div>
-							{/if}
-
-							<!-- Meta Info -->
-							<div
-								class="mb-4 flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400"
-							>
-								<span class="flex items-center">
-									<i class="fas fa-calendar mr-1"></i>
-									{formatDate(agent.updatedAt || agent.createdAt)}
-								</span>
-								{#if agent.conversations_count}
-									<span class="flex items-center">
-										<i class="fas fa-comments mr-1"></i>
-										{agent.conversations_count} chats
-									</span>
-								{/if}
-								{#if agent.executions_count}
-									<span class="flex items-center">
-										<i class="fas fa-play mr-1"></i>
-										{agent.executions_count} runs
-									</span>
-								{/if}
-							</div>
-
-							<!-- Actions -->
-							<div class="flex items-center justify-between">
-								<div class="flex items-center space-x-2">
-									{#if agent.type === 'chatbot'}
-										<button
-											on:click={() => openChatModal(agent)}
-											class="flex items-center space-x-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-										>
-											<i class="fas fa-comments"></i>
-											<span>Chat</span>
-										</button>
-									{:else}
-										<button
-											on:click={() => openExecuteModal(agent)}
-											class="flex items-center space-x-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-										>
-											<i class="fas fa-play"></i>
-											<span>Execute</span>
-										</button>
-									{/if}
-								</div>
-
-								<div class="flex items-center space-x-2">
-									<button
-										on:click={() => openEditModal(agent)}
-										class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-										title="Edit Agent"
-									>
-										<i class="fas fa-edit"></i>
-									</button>
-									<button
-										class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-										title="Duplicate"
-									>
-										<i class="fas fa-copy"></i>
-									</button>
-									<button
-										on:click={() => openDeleteModal(agent)}
-										class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-gray-500 dark:hover:bg-red-600/10 dark:hover:text-red-400"
-										title="Delete"
-									>
-										<i class="fas fa-trash"></i>
-									</button>
-								</div>
-							</div>
+							<i class="fas fa-magic text-sm"></i>
 						</div>
-					{/each}
+						<span>Prompts</span>
+					</a>
+					<a
+						href="/app/org/{data.organization_id}/project/{data.project._id}/agents"
+						class="group flex items-center space-x-2 border-b-2 border-indigo-500 px-1 py-4 font-medium text-indigo-600 dark:text-indigo-400"
+					>
+						<div
+							class="flex h-6 w-6 items-center justify-center rounded bg-indigo-500/10 transition-colors group-hover:bg-indigo-500/20"
+						>
+							<i class="fas fa-robot text-sm"></i>
+						</div>
+						<span>AI Agents</span>
+					</a>
+				</nav>
+			</div>
+		</div>
+
+		<!-- Statistics Cards -->
+		<div class="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+			<div
+				class="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-6 transition-all duration-300 hover:border-indigo-300 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:hover:border-indigo-600"
+			>
+				<div class="absolute left-0 top-0 h-1 w-full bg-indigo-500"></div>
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Agents</p>
+						<p
+							class="text-3xl font-bold text-gray-800 transition-colors group-hover:text-indigo-600 dark:text-gray-100 dark:group-hover:text-indigo-400"
+						>
+							{agents.length}
+						</p>
+					</div>
+					<div
+						class="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-500 shadow-lg"
+					>
+						<i class="fas fa-robot text-white"></i>
+					</div>
 				</div>
-			{/if}
+			</div>
+
+			<div
+				class="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-6 transition-all duration-300 hover:border-green-300 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:hover:border-green-600"
+			>
+				<div class="absolute left-0 top-0 h-1 w-full bg-green-500"></div>
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-sm font-medium text-gray-600 dark:text-gray-400">Active Agents</p>
+						<p
+							class="text-3xl font-bold text-gray-800 transition-colors group-hover:text-green-600 dark:text-gray-100 dark:group-hover:text-green-400"
+						>
+							{agents.filter((a: any) => a.is_active).length}
+						</p>
+					</div>
+					<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500 shadow-lg">
+						<i class="fas fa-check-circle text-white"></i>
+					</div>
+				</div>
+			</div>
+
+			<div
+				class="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-6 transition-all duration-300 hover:border-blue-300 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:hover:border-blue-600"
+			>
+				<div class="absolute left-0 top-0 h-1 w-full bg-blue-500"></div>
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-sm font-medium text-gray-600 dark:text-gray-400">Chatbots</p>
+						<p
+							class="text-3xl font-bold text-gray-800 transition-colors group-hover:text-blue-600 dark:text-gray-100 dark:group-hover:text-blue-400"
+						>
+							{agents.filter((a: any) => a.type === 'chatbot').length}
+						</p>
+					</div>
+					<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500 shadow-lg">
+						<i class="fas fa-comments text-white"></i>
+					</div>
+				</div>
+			</div>
+
+			<div
+				class="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-6 transition-all duration-300 hover:border-purple-300 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:hover:border-purple-600"
+			>
+				<div class="absolute left-0 top-0 h-1 w-full bg-purple-500"></div>
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-sm font-medium text-gray-600 dark:text-gray-400">Task Agents</p>
+						<p
+							class="text-3xl font-bold text-gray-800 transition-colors group-hover:text-purple-600 dark:text-gray-100 dark:group-hover:text-purple-400"
+						>
+							{agents.filter((a: any) => a.type === 'task').length}
+						</p>
+					</div>
+					<div
+						class="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-500 shadow-lg"
+					>
+						<i class="fas fa-tasks text-white"></i>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Agents Section -->
+		<div
+			class="rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+		>
+			<!-- Header -->
+			<div class="border-b border-gray-200 p-6 dark:border-gray-700">
+				<div
+					class="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0"
+				>
+					<div>
+						<h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Agent Management</h2>
+						<p class="text-gray-600 dark:text-gray-400">
+							Create and manage intelligent AI agents for automation
+						</p>
+					</div>
+
+					<!-- Search and Actions -->
+					<div class="flex items-center space-x-3">
+						<div class="relative">
+							<i
+								class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+							></i>
+							<input
+								type="text"
+								placeholder="Search agents..."
+								on:input={handleSearch}
+								class="w-64 rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-4 text-gray-900 placeholder-gray-500 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:border-indigo-400"
+							/>
+						</div>
+
+						<!-- Sort and Filter Controls -->
+						<div class="flex items-center space-x-2">
+							<select
+								bind:value={filterType}
+								class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-all hover:bg-gray-50 hover:shadow-md dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+							>
+								<option value="all">All Types</option>
+								<option value="chatbot">Chatbots</option>
+								<option value="task">Task Agents</option>
+								<option value="workflow">Workflows</option>
+								<option value="api">API Agents</option>
+							</select>
+							<button
+								on:click={() => toggleSort('name')}
+								class="flex items-center space-x-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-all hover:bg-gray-50 hover:shadow-md dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+							>
+								<i
+									class="fas fa-sort-alpha-{sortBy === 'name' && sortOrder === 'asc'
+										? 'down'
+										: 'up'}"
+								></i>
+								<span>Name</span>
+							</button>
+							<button
+								on:click={() => toggleSort('updatedAt')}
+								class="flex items-center space-x-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-all hover:bg-gray-50 hover:shadow-md dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+							>
+								<i
+									class="fas fa-sort-numeric-{sortBy === 'updatedAt' && sortOrder === 'asc'
+										? 'down'
+										: 'up'}"
+								></i>
+								<span>Date</span>
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Content -->
+			<div class="p-6">
+				{#if loading}
+					<!-- Skeleton Loading State -->
+					<div class="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
+						<SkeletonLoader variant="card" count={6} />
+					</div>
+				{:else if filteredAgents.length === 0}
+					<!-- Empty State -->
+					<div class="py-16 text-center">
+						<div
+							class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-900/20"
+						>
+							<i class="fas fa-robot text-3xl text-indigo-600 dark:text-indigo-400"></i>
+						</div>
+						<h3 class="mb-3 text-xl font-semibold text-gray-800 dark:text-gray-200">
+							{searchTerm || filterType !== 'all' ? 'No agents found' : 'No agents yet'}
+						</h3>
+						<p class="mx-auto mb-8 max-w-md text-gray-600 dark:text-gray-400">
+							{searchTerm || filterType !== 'all'
+								? 'Try adjusting your search or filter criteria.'
+								: 'Get started by creating your first AI agent for automated tasks and conversations.'}
+						</p>
+						{#if !searchTerm && filterType === 'all'}
+							<button
+								on:click={openCreateModal}
+								class="inline-flex items-center space-x-2 rounded-lg bg-indigo-600 px-6 py-3 font-medium text-white shadow-lg transition-all hover:scale-105 hover:bg-indigo-700 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+							>
+								<i class="fas fa-plus"></i>
+								<span>Create Your First Agent</span>
+							</button>
+						{:else}
+							<button
+								on:click={() => {
+									searchTerm = '';
+									filterType = 'all';
+								}}
+								class="inline-flex items-center space-x-2 rounded-lg border-2 border-gray-300 px-6 py-3 font-medium text-gray-700 transition-all hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:border-gray-500 dark:hover:bg-gray-700"
+							>
+								<i class="fas fa-times"></i>
+								<span>Clear Filters</span>
+							</button>
+						{/if}
+					</div>
+				{:else}
+					<!-- Enhanced Agents Grid -->
+					<div class="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
+						{#each filteredAgents as agent}
+							<EnhancedCard
+								title={agent.name}
+								description={agent.description || 'No description provided'}
+								status={getAgentStatus(agent)}
+								type={agent.type || 'agent'}
+								updatedAt={agent.updatedAt || agent.createdAt}
+								version=""
+								href="/app/org/{data.organization_id}/project/{data.project._id}/agents/{agent._id}"
+								onDelete={() => openDeleteModal(agent)}
+								onDuplicate={() => duplicateAgent(agent)}
+								customActions={agent.type === 'chatbot'
+									? [
+											{
+												title: 'Chat',
+												icon: 'fas fa-comments',
+												onClick: () => openChatModal(agent)
+											}
+										]
+									: [
+											{
+												title: 'Execute',
+												icon: 'fas fa-play',
+												onClick: () => openExecuteModal(agent)
+											}
+										]}
+							/>
+						{/each}
+					</div>
+				{/if}
+			</div>
 		</div>
 	</div>
 </div>
@@ -595,40 +542,62 @@
 	/>
 {/if}
 
-<!-- Delete Confirmation Modal -->
+<!-- Enhanced Delete Confirmation Modal -->
 {#if showDeleteModal && agentToDelete}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
 		<div
-			class="mx-4 w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-800"
+			class="mx-auto w-full max-w-md transform overflow-hidden rounded-2xl border border-gray-200/50 bg-white/95 shadow-2xl backdrop-blur-lg transition-all dark:border-gray-700/50 dark:bg-gray-800/95"
 		>
-			<div class="mb-4 flex items-center space-x-3">
-				<div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/10">
-					<i class="fas fa-exclamation-triangle text-red-500 dark:text-red-400"></i>
-				</div>
-				<div>
-					<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Delete Agent</h3>
-					<p class="text-sm text-gray-600 dark:text-gray-400">This action cannot be undone</p>
+			<!-- Header -->
+			<div class="p-6 pb-4">
+				<div class="flex items-center space-x-4">
+					<div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-500 shadow-lg">
+						<i class="fas fa-exclamation-triangle text-white"></i>
+					</div>
+					<div>
+						<h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">Delete Agent</h3>
+						<p class="text-sm text-gray-600 dark:text-gray-400">This action cannot be undone</p>
+					</div>
 				</div>
 			</div>
 
-			<p class="mb-6 text-gray-700 dark:text-gray-300">
-				Are you sure you want to delete <strong class="text-gray-900 dark:text-white"
-					>"{agentToDelete.name}"</strong
-				>? This will also delete all associated conversations and execution history.
-			</p>
+			<!-- Content -->
+			<div class="px-6 pb-6">
+				<div class="rounded-lg bg-red-50/50 p-4 dark:bg-red-900/20">
+					<p class="text-gray-700 dark:text-gray-300">
+						Are you sure you want to delete the agent
+						<span class="font-semibold text-red-600 dark:text-red-400">"{agentToDelete.name}"</span
+						>?
+					</p>
+					<p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+						This will also delete all associated conversations and execution history.
+					</p>
+				</div>
+			</div>
 
-			<div class="flex justify-end space-x-3">
+			<!-- Actions -->
+			<div
+				class="flex items-center justify-end space-x-3 bg-gray-50/50 px-6 py-4 dark:bg-gray-700/30"
+			>
 				<button
 					on:click={closeDeleteModal}
-					class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+					disabled={isLoading}
+					class="rounded-lg border border-gray-300 bg-white px-4 py-2.5 font-medium text-gray-700 transition-all hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-500/20 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
 				>
 					Cancel
 				</button>
 				<button
 					on:click={confirmDelete}
-					class="rounded-lg bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+					disabled={isLoading}
+					class="flex items-center space-x-2 rounded-lg bg-red-600 px-4 py-2.5 font-medium text-white shadow-lg transition-all hover:bg-red-700 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 disabled:opacity-50"
 				>
-					Delete Agent
+					{#if isLoading}
+						<i class="fas fa-spinner animate-spin"></i>
+						<span>Deleting...</span>
+					{:else}
+						<i class="fas fa-trash"></i>
+						<span>Delete Agent</span>
+					{/if}
 				</button>
 			</div>
 		</div>
