@@ -632,7 +632,7 @@
 							</div>
 						{:else}
 							<div class="space-y-3">
-								{#each executions.slice(0, 3) as execution}
+								{#each executions as execution}
 									<div
 										class="flex items-center justify-between rounded-lg border border-gray-100 p-3 dark:border-gray-700"
 									>

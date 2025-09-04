@@ -167,6 +167,10 @@
 				}
 			};
 
+			if (!suggestionsEnabled) {
+				delete agentData.question_suggestions;
+			}
+
 			const res = await api.fetch(
 				`/organizations/${data.organization_id}/projects/${data.project._id}/agents/${agent._id}`,
 				{
