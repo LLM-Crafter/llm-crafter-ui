@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  llm-crafter-ui:
+    build: .
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    restart: unless-stopped
+    # Uncomment the following lines if you need to mount environment variables
+    # env_file:
+    #   - .env
+    # volumes:
+    #   - ./.env:/app/.env:ro
