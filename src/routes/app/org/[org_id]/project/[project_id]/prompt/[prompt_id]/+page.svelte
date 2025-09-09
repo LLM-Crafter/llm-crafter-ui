@@ -22,7 +22,9 @@
 
 	let promptContent = data.prompt.content;
 	let highlighted = '';
-	$: highlighted = Prism.highlight(promptContent, Prism.languages.markup, 'markup');
+	$: highlighted = promptContent
+		? Prism.highlight(promptContent, Prism.languages.markup, 'markup')
+		: '';
 	$: if (formData.content) variableMatches = formData.content.match(/{{\s*[\w]+\s*}}/g) || [];
 	$: {
 		if (typeof formData.api_key === 'string') {
