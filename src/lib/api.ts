@@ -43,6 +43,63 @@ export interface ApiKeyDTO {
 	provider?: string;
 }
 
+export interface UserApiKeyCreateDTO {
+	name: string;
+	scopes: string[];
+	restrictions?: {
+		ip_whitelist?: string[];
+		domain_whitelist?: string[];
+		rate_limit_override?: number;
+		max_executions_per_day?: number;
+	};
+	expires_at?: string;
+	allowed_projects?: string[];
+}
+
+export interface UserApiKeyUpdateDTO {
+	name?: string;
+	scopes?: string[];
+	restrictions?: {
+		ip_whitelist?: string[];
+		domain_whitelist?: string[];
+		rate_limit_override?: number;
+		max_executions_per_day?: number;
+	};
+	expires_at?: string;
+	allowed_projects?: string[];
+}
+
+export interface UserApiKey {
+	_id: string;
+	name: string;
+	api_key?: string; // Only returned on creation
+	scopes: string[];
+	restrictions?: {
+		ip_whitelist?: string[];
+		domain_whitelist?: string[];
+		rate_limit_override?: number;
+		max_executions_per_day?: number;
+	};
+	expires_at?: string | null;
+	allowed_projects?: string[];
+	is_active: boolean;
+	createdAt: string;
+	updatedAt: string;
+	usage?: {
+		total_requests: number;
+		executions_today: number;
+		last_used_at?: string;
+		last_reset_date?: string;
+	};
+	is_expired: boolean | null;
+	masked_key: string;
+	user: string;
+	organization: string;
+	created_by: string;
+	__v?: number;
+	id?: string; // Might be added by Mongoose
+}
+
 export interface PromptCreateDTO {
 	name?: string;
 }
@@ -647,6 +704,72 @@ class ApiClient {
 		}
 
 		return await response.json();
+	}
+
+	// User API Key Management Methods
+	async createUserApiKey(orgId: string, data: UserApiKeyCreateDTO): Promise<UserApiKey> {
+		const response = await this.fetch(`/organizations/${orgId}/user-api-keys`, {
+			method: 'POST',
+			body: JSON.stringify(data)
+		});
+
+		if (!response.ok) throw new Error('Failed to create user API key');
+		const result = await response.json();
+		return result.data;
+	}
+
+	async getUserApiKeys(orgId: string): Promise<UserApiKey[]> {
+		const response = await this.fetch(`/organizations/${orgId}/user-api-keys`);
+		if (!response.ok) throw new Error('Failed to fetch user API keys');
+		const result = await response.json();
+		return result.data;
+	}
+
+	async getUserApiKey(orgId: string, keyId: string): Promise<UserApiKey> {
+		const response = await this.fetch(`/organizations/${orgId}/user-api-keys/${keyId}`);
+		if (!response.ok) throw new Error('Failed to fetch user API key');
+		const result = await response.json();
+		return result.data;
+	}
+
+	async updateUserApiKey(
+		orgId: string,
+		keyId: string,
+		data: UserApiKeyUpdateDTO
+	): Promise<UserApiKey> {
+		const response = await this.fetch(`/organizations/${orgId}/user-api-keys/${keyId}`, {
+			method: 'PUT',
+			body: JSON.stringify(data)
+		});
+
+		if (!response.ok) throw new Error('Failed to update user API key');
+		const result = await response.json();
+		return result.data;
+	}
+
+	async rotateUserApiKey(orgId: string, keyId: string): Promise<UserApiKey> {
+		const response = await this.fetch(`/organizations/${orgId}/user-api-keys/${keyId}/rotate`, {
+			method: 'POST'
+		});
+
+		if (!response.ok) throw new Error('Failed to rotate user API key');
+		const result = await response.json();
+		return result.data;
+	}
+
+	async revokeUserApiKey(orgId: string, keyId: string): Promise<void> {
+		const response = await this.fetch(`/organizations/${orgId}/user-api-keys/${keyId}`, {
+			method: 'DELETE'
+		});
+
+		if (!response.ok) throw new Error('Failed to revoke user API key');
+	}
+
+	async getUserApiKeyUsage(orgId: string, keyId: string): Promise<any> {
+		const response = await this.fetch(`/organizations/${orgId}/user-api-keys/${keyId}/usage`);
+		if (!response.ok) throw new Error('Failed to fetch user API key usage');
+		const result = await response.json();
+		return result.data;
 	}
 }
 
