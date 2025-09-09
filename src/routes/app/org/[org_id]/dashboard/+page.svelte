@@ -177,6 +177,48 @@
 		}
 	}
 
+	// Transform topAgents data to include missing fields
+	$: processedTopAgents =
+		dashboardData?.topAgents?.map((agent) => {
+			// Calculate success rate based on recent activity for this agent
+			const agentActivities =
+				dashboardData?.recentActivity?.filter(
+					(activity) => activity.agent?._id === agent._id || activity.agent?.id === agent._id
+				) || [];
+
+			const completedCount = agentActivities.filter(
+				(activity) => activity.status === 'completed'
+			).length;
+			const totalCount = agentActivities.length;
+			const successRate = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+
+			// Calculate average execution time from recent activities
+			const completedActivities = agentActivities.filter(
+				(activity) => activity.status === 'completed' && activity.execution_time_ms
+			);
+			const avgExecutionTime =
+				completedActivities.length > 0
+					? completedActivities.reduce(
+							(sum, activity) => sum + (activity.execution_time_ms || 0),
+							0
+						) / completedActivities.length
+					: 0;
+
+			return {
+				...agent,
+				executions: agent.totalExecutions,
+				successRate: successRate,
+				avgExecutionTime: avgExecutionTime
+			};
+		}) || [];
+
+	// Transform dailyUsage data to match expected field names
+	$: processedDailyUsage =
+		dashboardData?.dailyUsage?.map((day) => ({
+			...day,
+			executions: day.executionCount
+		})) || [];
+
 	onMount(() => {
 		fetchDashboardData();
 
@@ -354,7 +396,7 @@
 			<div class="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
 				<h3 class="mb-4 text-lg font-medium text-gray-900 dark:text-white">Daily Usage</h3>
 				<div class="space-y-2">
-					{#each dashboardData?.dailyUsage || [] as day}
+					{#each processedDailyUsage as day}
 						<div class="flex items-center justify-between">
 							<span class="text-sm text-gray-600 dark:text-gray-400">
 								{new Date(day._id).toLocaleDateString()}
@@ -369,9 +411,9 @@
 										class="h-2 rounded-full bg-blue-500"
 										style="width: {Math.min(
 											100,
-											dashboardData?.dailyUsage?.length
+											processedDailyUsage?.length
 												? (day.tokenCount /
-														Math.max(...dashboardData.dailyUsage.map((d) => d.tokenCount))) *
+														Math.max(...processedDailyUsage.map((d) => d.tokenCount))) *
 														100
 												: 0
 										)}%"
@@ -389,7 +431,7 @@
 					Top Performing Agents
 				</h3>
 				<div class="space-y-4">
-					{#each dashboardData?.topAgents || [] as agent, index}
+					{#each processedTopAgents as agent, index}
 						<div class="flex items-center justify-between">
 							<div class="flex items-center space-x-3">
 								<div
@@ -406,7 +448,7 @@
 							</div>
 							<div class="text-right">
 								<p class="text-sm font-medium text-gray-900 dark:text-white">
-									{agent.successRate.toFixed(1)}%
+									{agent.successRate?.toFixed(1) || '0.0'}%
 								</p>
 								<p class="text-xs text-gray-500 dark:text-gray-400">
 									{formatDuration(agent.avgExecutionTime)}

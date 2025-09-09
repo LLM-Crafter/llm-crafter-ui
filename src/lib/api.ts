@@ -645,20 +645,8 @@ class ApiClient {
 		orgId: string,
 		period: '1d' | '1w' | '1m' = '1d'
 	): Promise<DashboardStatistics> {
-		const currentToken = get(token);
-		if (!currentToken) {
-			throw new Error('Authentication required');
-		}
-
-		const response = await fetch(
-			`${API_URL}/organizations/${orgId}/statistics/dashboard?period=${period}`,
-			{
-				method: 'GET',
-				headers: {
-					Authorization: `Bearer ${currentToken}`,
-					'Content-Type': 'application/json'
-				}
-			}
+		const response = await this.fetch(
+			`/organizations/${orgId}/statistics/dashboard?period=${period}`
 		);
 
 		if (!response.ok) {
@@ -678,20 +666,8 @@ class ApiClient {
 		agentId: string,
 		period: '1d' | '1w' | '1m' = '1d'
 	): Promise<AgentStatistics> {
-		const currentToken = get(token);
-		if (!currentToken) {
-			throw new Error('Authentication required');
-		}
-
-		const response = await fetch(
-			`${API_URL}/organizations/${orgId}/statistics/agents/${agentId}?period=${period}`,
-			{
-				method: 'GET',
-				headers: {
-					Authorization: `Bearer ${currentToken}`,
-					'Content-Type': 'application/json'
-				}
-			}
+		const response = await this.fetch(
+			`/organizations/${orgId}/statistics/agents/${agentId}?period=${period}`
 		);
 
 		if (!response.ok) {
