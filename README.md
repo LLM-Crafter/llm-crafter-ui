@@ -1,38 +1,66 @@
-# sv
+# LLM Crafter UI
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+> ⚠️ **Alpha Version** - This project is currently in active development and not finalized yet. Features and APIs may change.
 
-## Creating a project
+A modern SvelteKit frontend for the [LLM Crafter](https://github.com/LLM-Crafter/llm-crafter) platform - a collaborative environment for managing and executing LLM prompts with intelligent agents.
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Overview
+
+This UI provides a clean, responsive interface for:
+
+- Managing organizations and projects
+- Creating and configuring AI agents
+- Real-time conversations with chatbot agents
+- Executing task agents
+- API key and user management
+- Organization administration
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js 18+
+- A running [LLM Crafter API server](https://github.com/LLM-Crafter/llm-crafter)
+
+### Development
 
 ```bash
-# create a new project in the current directory
-npx sv create
+# Install dependencies
+npm install
 
-# create a new project in my-app
-npx sv create my-app
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```bash
+# Start development server
 npm run dev
 
-# or start the server and open the app in a new browser tab
+# Open in browser
 npm run dev -- --open
 ```
 
-## Building
+The UI will be available at `http://localhost:5173`.
 
-To create a production version of your app:
+### Building
 
 ```bash
+# Create production build
 npm run build
+
+# Preview production build
+npm run preview
 ```
 
-You can preview the production build with `npm run preview`.
+## Tech Stack
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+- **SvelteKit** - Full-stack framework
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+- **Vite** - Build tool
+
+## Project Structure
+
+- `src/routes/` - Page components and API routes
+- `src/lib/` - Shared components and utilities
+- `src/lib/ui/` - Reusable UI components
+- `src/lib/stores/` - Application state management
+
+## Related Projects
+
+- [LLM Crafter API](https://github.com/LLM-Crafter/llm-crafter) - Backend API server
