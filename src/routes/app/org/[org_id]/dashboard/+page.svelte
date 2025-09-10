@@ -483,7 +483,7 @@
 									{execution.agentName}
 								</p>
 								<p class="text-xs text-gray-500 dark:text-gray-400">
-									{new Date(execution.timestamp).toLocaleString()}
+									{new Date(execution.createdAt).toLocaleString()}
 								</p>
 							</div>
 						</div>
