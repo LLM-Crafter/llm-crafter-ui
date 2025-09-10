@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import { api } from '$lib/api';
 	import ThemeToggle from '$lib/ui/ThemeToggle.svelte';
+	import { browser } from '$app/environment';
 
 	export let data;
 	let createModalVisible = false;
@@ -32,7 +33,9 @@
 			data.organizations.some((org) => org._id === rememberedOrgId)
 		) {
 			// Auto-redirect to remembered organization
-			goto(`/app/org/${rememberedOrgId}`);
+			if (browser) {
+				goto(`/app/org/${rememberedOrgId}`);
+			}
 			return; // Don't set isInitializing to false since we're redirecting
 		} else if (rememberedOrgId && data.organizations.some((org) => org._id === rememberedOrgId)) {
 			// Pre-select the remembered organization
@@ -75,7 +78,9 @@
 			localStorage.removeItem('autoRedirectToOrg');
 		}
 
-		goto(`/app/org/${orgId}`);
+		if (browser) {
+			goto(`/app/org/${orgId}`);
+		}
 	}
 
 	function toggleRememberChoice() {

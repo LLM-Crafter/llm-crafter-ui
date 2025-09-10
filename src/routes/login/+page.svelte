@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import ThemeToggle from '$lib/ui/ThemeToggle.svelte';
+	import { browser } from '$app/environment';
 
 	let email: string = '';
 	let password: string = '';
@@ -11,7 +12,7 @@
 	let loading: boolean = false;
 
 	onMount(() => {
-		if ($token) {
+		if ($token && browser) {
 			goto('/app');
 		}
 	});

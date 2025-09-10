@@ -4,6 +4,7 @@
 	import { page } from '$app/stores';
 	import ProfileModal from '$lib/ui/modal/ProfileModal.svelte';
 	import ThemeToggle from '$lib/ui/ThemeToggle.svelte';
+	import { browser } from '$app/environment';
 
 	export let data;
 	let userDropdownVisible: boolean = false;
@@ -101,7 +102,9 @@
 		// Clear auto-redirect preference and go back to organization picker
 		localStorage.removeItem('autoRedirectToOrg');
 		orgDropdownVisible = false;
-		goto('/app');
+		if (browser) {
+			goto('/app');
+		}
 	}
 
 	function toggleOrgDropdown() {

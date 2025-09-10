@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import ThemeToggle from '$lib/ui/ThemeToggle.svelte';
+	import { browser } from '$app/environment';
 
 	let name: string = '';
 	let email: string = '';
@@ -12,7 +13,7 @@
 	let loading: boolean = false;
 
 	onMount(() => {
-		if ($token) {
+		if ($token && browser) {
 			goto('/app');
 		}
 	});
@@ -25,7 +26,7 @@
 			// Call API register endpoint
 			const authToken = await api.register(name, email, password);
 			token.set(authToken);
-			goto('/app/select-organization');
+			goto('/app');
 		} catch (err: any) {
 			error = err?.message || 'Registration failed';
 		} finally {

@@ -3,13 +3,16 @@
 	import { token } from '$lib/stores/auth';
 	import { api } from '$lib/api';
 	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
 
 	let loading = true;
 	let error = false;
 
 	onMount(async () => {
 		if (!$token) {
-			goto('/login');
+			if (browser) {
+				goto('/login');
+			}
 			return;
 		}
 
@@ -19,7 +22,9 @@
 		} catch (err) {
 			error = true;
 			token.set(null);
-			goto('/login');
+			if (browser) {
+				goto('/login');
+			}
 		}
 	});
 </script>
