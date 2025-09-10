@@ -52,7 +52,7 @@
 			// Use the authUrl from the API response, or fallback to API base + authUrl
 			const authUrl = providerConfig.authUrl.startsWith('http')
 				? providerConfig.authUrl
-				: `${api.getApiUrl()}${providerConfig.authUrl}`;
+				: `${api.getApiUrl()}${providerConfig.authUrl.replace('/api/v1', '')}`;
 			window.location.href = authUrl;
 		}
 	}
