@@ -2,32 +2,68 @@
 	import { invalidateAll } from '$app/navigation';
 	import { api } from '$lib/api.js';
 	import { theme } from '$lib/stores/theme';
+	import type { Organization } from '$lib/api.js';
 
-	export let data;
+	// Type definitions
+	type Role = 'admin' | 'member' | 'viewer';
 
-	let email = '';
-	let role = 'editor';
-	let isInviting = false;
-	let showInviteForm = false;
-	let searchQuery = '';
+	interface User {
+		id: string;
+		email: string;
+		_id?: string;
+	}
+
+	interface OrganizationMember {
+		user: User;
+		role: Role;
+		joinedAt?: string;
+	}
+
+	interface ExtendedOrganization extends Organization {
+		members: OrganizationMember[];
+	}
+
+	interface PageData {
+		organization: ExtendedOrganization;
+		organization_id: string;
+	}
+
+	export let data: PageData;
+
+	let email: string = '';
+	let role: Role = 'member';
+	let isInviting: boolean = false;
+	let showInviteForm: boolean = false;
+	let searchQuery: string = '';
+
+	// Edit member state
+	let showEditModal: boolean = false;
+	let editingMember: OrganizationMember | null = null;
+	let editRole: Role = 'member';
+	let isUpdating: boolean = false;
+
+	// Remove member state
+	let showRemoveModal: boolean = false;
+	let removingMember: OrganizationMember | null = null;
+	let isRemoving: boolean = false;
 
 	// Filter users based on search query
 	$: filteredUsers = (data.organization?.members || []).filter(
-		(member: any) =>
+		(member: OrganizationMember) =>
 			member.user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
 			member.role.toLowerCase().includes(searchQuery.toLowerCase())
-	);
+	) as OrganizationMember[];
 
-	async function inviteUser() {
+	async function inviteUser(): Promise<void> {
 		if (!email || !role || !data.organization_id) return;
 
 		try {
 			isInviting = true;
-			let response = await api.inviteUserToOrg(data.organization_id, email, role);
+			const response = await api.inviteUserToOrg(data.organization_id, email, role);
 
 			if (response) {
 				email = '';
-				role = 'editor';
+				role = 'member';
 				showInviteForm = false;
 				invalidateAll();
 			}
@@ -38,29 +74,72 @@
 		}
 	}
 
-	async function removeUser(user_id: string) {
-		if (
-			!confirm('Are you sure you want to remove this user from the organization?') ||
-			!data.organization_id
-		) {
-			return;
-		}
+	async function removeUser(user_id: string): Promise<void> {
+		if (!data.organization_id) return;
 
 		try {
-			let response = await api.deleteUserFromOrg(data.organization_id, user_id);
+			isRemoving = true;
+			const response = await api.deleteUserFromOrg(data.organization_id, user_id);
 			if (response) {
+				closeRemoveModal();
 				invalidateAll();
 			}
 		} catch (error) {
 			console.error('Failed to remove user:', error);
+		} finally {
+			isRemoving = false;
 		}
 	}
 
-	function getRoleIcon(role: string) {
+	function openRemoveModal(member: OrganizationMember): void {
+		removingMember = member;
+		showRemoveModal = true;
+	}
+
+	function closeRemoveModal(): void {
+		showRemoveModal = false;
+		removingMember = null;
+	}
+
+	function openEditModal(member: OrganizationMember): void {
+		editingMember = member;
+		editRole = member.role;
+		showEditModal = true;
+	}
+
+	function closeEditModal(): void {
+		showEditModal = false;
+		editingMember = null;
+		editRole = 'member';
+	}
+
+	async function updateMemberRole(): Promise<void> {
+		if (!editingMember || !data.organization_id) return;
+
+		try {
+			isUpdating = true;
+			const response = await api.updateMemberRole(
+				data.organization_id,
+				editingMember.user.id,
+				editRole
+			);
+
+			if (response) {
+				closeEditModal();
+				invalidateAll();
+			}
+		} catch (error) {
+			console.error('Failed to update member role:', error);
+		} finally {
+			isUpdating = false;
+		}
+	}
+
+	function getRoleIcon(role: Role): string {
 		switch (role) {
 			case 'admin':
 				return 'fas fa-crown';
-			case 'editor':
+			case 'member':
 				return 'fas fa-user-edit';
 			case 'viewer':
 				return 'fas fa-eye';
@@ -69,11 +148,11 @@
 		}
 	}
 
-	function getRoleColor(role: string) {
+	function getRoleColor(role: Role): string {
 		switch (role) {
 			case 'admin':
 				return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
-			case 'editor':
+			case 'member':
 				return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
 			case 'viewer':
 				return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
@@ -82,7 +161,7 @@
 		}
 	}
 
-	function formatJoinDate(dateString: string) {
+	function formatJoinDate(dateString?: string): string {
 		if (!dateString) return 'Recently';
 		return new Date(dateString).toLocaleDateString('en-US', {
 			year: 'numeric',
@@ -172,7 +251,7 @@
 							class="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
 						>
 							<option value="admin">Admin - Full access</option>
-							<option value="editor">Member - Edit projects</option>
+							<option value="member">Member - Edit projects</option>
 							<option value="viewer">Viewer - Read only</option>
 						</select>
 					</div>
@@ -287,6 +366,7 @@
 							<div class="flex items-center space-x-3">
 								{#if member.user.id !== data.organization.owner}
 									<button
+										on:click={() => openEditModal(member)}
 										class="rounded-lg border border-blue-300 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
 										title="Edit user role"
 										aria-label="Edit user role"
@@ -294,7 +374,7 @@
 										<i class="fas fa-edit"></i>
 									</button>
 									<button
-										on:click={() => removeUser(member.user.id)}
+										on:click={() => openRemoveModal(member)}
 										class="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 dark:border-red-600 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
 										title="Remove user"
 										aria-label="Remove user from organization"
@@ -343,3 +423,161 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Edit Member Role Modal -->
+{#if showEditModal && editingMember}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+		<div
+			class="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-800"
+		>
+			<div class="mb-6">
+				<div class="mb-2 flex items-center justify-between">
+					<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Edit Member Role</h3>
+					<button
+						on:click={closeEditModal}
+						class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+					>
+						<i class="fas fa-times"></i>
+					</button>
+				</div>
+				<div class="flex items-center space-x-3">
+					<div
+						class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-sm font-bold text-white"
+					>
+						{editingMember.user.email.charAt(0).toUpperCase()}
+					</div>
+					<div>
+						<p class="font-medium text-gray-900 dark:text-gray-100">
+							{editingMember.user.email}
+						</p>
+						<p class="text-sm text-gray-500 dark:text-gray-400">
+							Current role: <span class="font-medium">{editingMember.role}</span>
+						</p>
+					</div>
+				</div>
+			</div>
+
+			<form on:submit|preventDefault={updateMemberRole}>
+				<div class="mb-6">
+					<label
+						for="editRole"
+						class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+					>
+						New Role
+					</label>
+					<select
+						id="editRole"
+						bind:value={editRole}
+						class="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+					>
+						<option value="admin">Admin - Full access</option>
+						<option value="member">Member - Edit projects</option>
+						<option value="viewer">Viewer - Read only</option>
+					</select>
+				</div>
+
+				<div class="flex justify-end space-x-3">
+					<button
+						type="button"
+						on:click={closeEditModal}
+						class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+					>
+						Cancel
+					</button>
+					<button
+						type="submit"
+						disabled={isUpdating || editRole === editingMember.role}
+						class="inline-flex items-center space-x-2 rounded-lg bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+					>
+						{#if isUpdating}
+							<i class="fas fa-spinner fa-spin"></i>
+						{:else}
+							<i class="fas fa-save"></i>
+						{/if}
+						<span>{isUpdating ? 'Updating...' : 'Update Role'}</span>
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+{/if}
+
+<!-- Remove Member Confirmation Modal -->
+{#if showRemoveModal && removingMember}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+		<div
+			class="w-full max-w-md rounded-xl border border-red-200 bg-white p-6 shadow-2xl dark:border-red-800 dark:bg-gray-800"
+		>
+			<div class="mb-6">
+				<div class="mb-4 flex items-center justify-between">
+					<div class="flex items-center space-x-3">
+						<div
+							class="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30"
+						>
+							<i class="fas fa-exclamation-triangle text-xl text-red-600 dark:text-red-400"></i>
+						</div>
+						<div>
+							<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Remove Member</h3>
+							<p class="text-sm text-gray-500 dark:text-gray-400">This action cannot be undone</p>
+						</div>
+					</div>
+					<button
+						on:click={closeRemoveModal}
+						class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+					>
+						<i class="fas fa-times"></i>
+					</button>
+				</div>
+
+				<div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
+					<div class="flex items-center space-x-3">
+						<div
+							class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-sm font-bold text-white"
+						>
+							{removingMember.user.email.charAt(0).toUpperCase()}
+						</div>
+						<div>
+							<p class="font-medium text-gray-900 dark:text-gray-100">
+								{removingMember.user.email}
+							</p>
+							<p class="text-sm text-gray-500 dark:text-gray-400">
+								Role: <span class="font-medium">{removingMember.role}</span>
+							</p>
+						</div>
+					</div>
+				</div>
+
+				<div class="mt-4">
+					<p class="text-sm text-gray-600 dark:text-gray-300">
+						Are you sure you want to remove <strong>{removingMember.user.email}</strong> from this organization?
+						They will lose access to all projects and data within this organization.
+					</p>
+				</div>
+			</div>
+
+			<div class="flex justify-end space-x-3">
+				<button
+					type="button"
+					on:click={closeRemoveModal}
+					disabled={isRemoving}
+					class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+				>
+					Cancel
+				</button>
+				<button
+					type="button"
+					on:click={() => removingMember && removeUser(removingMember.user.id)}
+					disabled={isRemoving}
+					class="inline-flex items-center space-x-2 rounded-lg bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
+				>
+					{#if isRemoving}
+						<i class="fas fa-spinner fa-spin"></i>
+					{:else}
+						<i class="fas fa-trash"></i>
+					{/if}
+					<span>{isRemoving ? 'Removing...' : 'Remove Member'}</span>
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}

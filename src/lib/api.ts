@@ -513,6 +513,20 @@ class ApiClient {
 		return response.json();
 	}
 
+	async updateMemberRole(
+		orgId: string,
+		userId: string,
+		role: 'admin' | 'member' | 'viewer'
+	): Promise<{}> {
+		const response = await this.fetch(`/organizations/${orgId}/members/${userId}`, {
+			method: 'PUT',
+			body: JSON.stringify({ role })
+		});
+
+		if (!response.ok) throw new Error('Failed to update member role');
+		return response.json();
+	}
+
 	// Agent management methods
 	async getAgents(orgId: string, projectId: string) {
 		const response = await this.fetch(`/organizations/${orgId}/projects/${projectId}/agents`);
