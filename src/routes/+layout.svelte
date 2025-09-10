@@ -16,4 +16,8 @@
 	});
 </script>
 
+<svelte:head>
+	<title>LLM Crafter - APP</title>
+</svelte:head>
+
 {@render children()}
