@@ -4,6 +4,11 @@
 
 A modern SvelteKit frontend for the [LLM Crafter](https://github.com/LLM-Crafter/llm-crafter) platform - a collaborative environment for managing and executing LLM prompts with intelligent agents.
 
+## Preview
+
+![LLM Crafter UI Preview](./static/ui-preview.png)
+_Modern, responsive interface for managing AI agents and executing LLM prompts_
+
 ## Overview
 
 This UI provides a clean, responsive interface for:
