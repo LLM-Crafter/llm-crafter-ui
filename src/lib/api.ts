@@ -148,6 +148,21 @@ export interface ExecutePromptParameters {
 	};
 }
 
+export interface OAuthProvider {
+	name: string;
+	displayName: string;
+	authUrl: string;
+}
+
+export interface OAuthProvidersResponse {
+	success: boolean;
+	data: {
+		providers: OAuthProvider[];
+		domainRestricted: boolean;
+		allowedDomains: string[];
+	};
+}
+
 export interface TestPromptParameters {
 	content: string;
 	system_prompt?: string;
@@ -243,6 +258,10 @@ export interface AgentStatistics {
 }
 
 class ApiClient {
+	getApiUrl(): string {
+		return API_URL;
+	}
+
 	async fetch(endpoint: string, options: RequestInit = {}) {
 		const authToken = get(token);
 
@@ -279,6 +298,20 @@ class ApiClient {
 
 		const data = await response.json();
 		return data.token;
+	}
+
+	async getOAuthProviders(): Promise<OAuthProvidersResponse> {
+		const response = await fetch(`${API_URL}/auth/oauth/providers`);
+		if (!response.ok) throw new Error('Failed to fetch OAuth providers');
+		return response.json();
+	}
+
+	getGoogleOAuthUrl(): string {
+		return `${API_URL}/api/v1/auth/google`;
+	}
+
+	getGitHubOAuthUrl(): string {
+		return `${API_URL}/api/v1/auth/github`;
 	}
 
 	async getProfile() {

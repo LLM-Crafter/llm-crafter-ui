@@ -4,16 +4,29 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import ThemeToggle from '$lib/ui/ThemeToggle.svelte';
+	import OAuthButton from '$lib/ui/OAuthButton.svelte';
 	import { browser } from '$app/environment';
+	import type { OAuthProvidersResponse } from '$lib/api';
 
 	let email: string = '';
 	let password: string = '';
 	let error: string = '';
 	let loading: boolean = false;
+	let oauthProviders: OAuthProvidersResponse | null = null;
+	let oauthLoading: boolean = true;
 
-	onMount(() => {
+	onMount(async () => {
 		if ($token && browser) {
 			goto('/app');
+		}
+
+		// Load OAuth providers
+		try {
+			oauthProviders = await api.getOAuthProviders();
+		} catch (err) {
+			console.error('Failed to load OAuth providers:', err);
+		} finally {
+			oauthLoading = false;
 		}
 	});
 
@@ -32,6 +45,20 @@
 			loading = false;
 		}
 	}
+
+	function handleOAuthLogin(provider: 'google' | 'github') {
+		const providerConfig = enabledProviders.find((p) => p.name === provider);
+		if (providerConfig) {
+			// Use the authUrl from the API response, or fallback to API base + authUrl
+			const authUrl = providerConfig.authUrl.startsWith('http')
+				? providerConfig.authUrl
+				: `${api.getApiUrl()}${providerConfig.authUrl}`;
+			window.location.href = authUrl;
+		}
+	}
+
+	// Get available OAuth providers
+	$: enabledProviders = oauthProviders?.data?.providers || [];
 </script>
 
 <div
@@ -49,6 +76,35 @@
 		<h1 class="mb-6 text-center text-3xl font-semibold text-gray-800 dark:text-gray-100">
 			LLM Crafter
 		</h1>
+
+		<!-- OAuth Buttons -->
+		{#if !oauthLoading && enabledProviders.length > 0}
+			<div class="mb-6 space-y-3">
+				{#each enabledProviders as provider}
+					{#if provider.name === 'google'}
+						<OAuthButton
+							provider="google"
+							disabled={loading}
+							onClick={() => handleOAuthLogin('google')}
+						/>
+					{:else if provider.name === 'github'}
+						<OAuthButton
+							provider="github"
+							disabled={loading}
+							onClick={() => handleOAuthLogin('github')}
+						/>
+					{/if}
+				{/each}
+			</div>
+
+			<!-- Divider -->
+			<div class="mb-6 flex items-center">
+				<div class="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
+				<div class="mx-3 text-sm text-gray-500 dark:text-gray-400">or</div>
+				<div class="flex-1 border-t border-gray-300 dark:border-gray-600"></div>
+			</div>
+		{/if}
+
 		<form on:submit|preventDefault={handleSubmit}>
 			<div class="mb-4">
 				<label for="email" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
