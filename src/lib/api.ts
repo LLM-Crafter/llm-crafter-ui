@@ -1,9 +1,9 @@
 import { get } from 'svelte/store';
 import { token } from './stores/auth';
 import { goto } from '$app/navigation';
-import { PUBLIC_API_URL } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 
-const API_URL = PUBLIC_API_URL;
+const API_URL = env.PUBLIC_API_URL;
 
 export interface Organization {
 	_id: string;
