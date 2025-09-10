@@ -434,6 +434,7 @@
 				<div class="mb-2 flex items-center justify-between">
 					<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Edit Member Role</h3>
 					<button
+						aria-label="Edit"
 						on:click={closeEditModal}
 						class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
 					>
@@ -523,6 +524,7 @@
 					</div>
 					<button
 						on:click={closeRemoveModal}
+						aria-label="Close"
 						class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
 					>
 						<i class="fas fa-times"></i>
