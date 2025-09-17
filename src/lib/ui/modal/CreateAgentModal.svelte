@@ -57,6 +57,11 @@
 			id: 'faq',
 			name: 'FAQ',
 			description: 'Answer questions using configured frequently asked questions'
+		},
+		{
+			id: 'rag_search',
+			name: 'RAG Search',
+			description: 'Search indexed documents and knowledge base using RAG'
 		}
 	];
 
@@ -96,6 +101,8 @@
 				return 'fas fa-plug';
 			case 'faq':
 				return 'fas fa-question-circle';
+			case 'rag_search':
+				return 'fas fa-database';
 			default:
 				return 'fas fa-tools';
 		}
@@ -117,6 +124,8 @@
 				return 'from-red-500 to-pink-500';
 			case 'faq':
 				return 'from-cyan-500 to-teal-500';
+			case 'rag_search':
+				return 'from-orange-500 to-red-500';
 			default:
 				return 'from-indigo-500 to-purple-600';
 		}

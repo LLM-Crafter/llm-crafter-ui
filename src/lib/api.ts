@@ -794,6 +794,155 @@ class ApiClient {
 		const result = await response.json();
 		return result.data;
 	}
+
+	// RAG (Retrieval-Augmented Generation) Methods
+	async indexDocuments(orgId: string, projectId: string, documentsData: any): Promise<any> {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/rag/index`,
+			{
+				method: 'POST',
+				body: JSON.stringify(documentsData)
+			}
+		);
+
+		if (!response.ok) throw new Error('Failed to index documents');
+		return response.json();
+	}
+
+	async searchDocuments(orgId: string, projectId: string, searchData: any): Promise<any> {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/rag/search`,
+			{
+				method: 'POST',
+				body: JSON.stringify(searchData)
+			}
+		);
+
+		if (!response.ok) throw new Error('Failed to search documents');
+		return response.json();
+	}
+
+	async getRagStats(orgId: string, projectId: string): Promise<any> {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/rag/stats`
+		);
+
+		if (!response.ok) throw new Error('Failed to fetch RAG statistics');
+		return response.json();
+	}
+
+	async clearRagKnowledgeBase(orgId: string, projectId: string): Promise<any> {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/rag/clear`,
+			{
+				method: 'DELETE'
+			}
+		);
+
+		if (!response.ok) throw new Error('Failed to clear knowledge base');
+		return response.json();
+	}
+
+	async batchIndexDocuments(orgId: string, projectId: string, batchData: any): Promise<any> {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/rag/batch-index`,
+			{
+				method: 'POST',
+				body: JSON.stringify(batchData)
+			}
+		);
+
+		if (!response.ok) throw new Error('Failed to batch index documents');
+		return response.json();
+	}
+
+	// Vector Database Configuration Methods
+	async getSupportedVectorDbProviders(): Promise<any> {
+		const response = await this.fetch('/vector-databases/providers');
+
+		if (!response.ok) throw new Error('Failed to fetch supported vector database providers');
+		return response.json();
+	}
+
+	async createVectorDbConfig(orgId: string, projectId: string, configData: any): Promise<any> {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/vector-databases`,
+			{
+				method: 'POST',
+				body: JSON.stringify(configData)
+			}
+		);
+
+		if (!response.ok) throw new Error('Failed to create vector database configuration');
+		return response.json();
+	}
+
+	async getVectorDbConfigs(orgId: string, projectId: string): Promise<any> {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/vector-databases`
+		);
+
+		if (!response.ok) throw new Error('Failed to fetch vector database configurations');
+		return response.json();
+	}
+
+	async updateVectorDbConfig(orgId: string, projectId: string, configId: string, configData: any): Promise<any> {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/vector-databases/${configId}`,
+			{
+				method: 'PUT',
+				body: JSON.stringify(configData)
+			}
+		);
+
+		if (!response.ok) throw new Error('Failed to update vector database configuration');
+		return response.json();
+	}
+
+	async deleteVectorDbConfig(orgId: string, projectId: string, configId: string): Promise<any> {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/vector-databases/${configId}`,
+			{
+				method: 'DELETE'
+			}
+		);
+
+		if (!response.ok) throw new Error('Failed to delete vector database configuration');
+		return response.json();
+	}
+
+	async testVectorDbConnection(orgId: string, projectId: string, configId: string): Promise<any> {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/vector-databases/${configId}/test`,
+			{
+				method: 'POST'
+			}
+		);
+
+		if (!response.ok) throw new Error('Failed to test vector database connection');
+		return response.json();
+	}
+
+	async setDefaultVectorDbConfig(orgId: string, projectId: string, configId: string): Promise<any> {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/vector-databases/${configId}/default`,
+			{
+				method: 'PUT'
+			}
+		);
+
+		if (!response.ok) throw new Error('Failed to set default vector database configuration');
+		return response.json();
+	}
+
+	async getVectorDbConfigStats(orgId: string, projectId: string, configId: string): Promise<any> {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/vector-databases/${configId}/stats`
+		);
+
+		if (!response.ok) throw new Error('Failed to fetch vector database configuration stats');
+		return response.json();
+	}
 }
 
 export const api = new ApiClient();

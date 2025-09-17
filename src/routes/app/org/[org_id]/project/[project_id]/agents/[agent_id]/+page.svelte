@@ -7,6 +7,7 @@
 	import EditAgentModal from '$lib/ui/modal/EditAgentModal.svelte';
 	import ConfigureApiEndpointsModal from '$lib/ui/modal/ConfigureApiEndpointsModal.svelte';
 	import ConfigureFaqModal from '$lib/ui/modal/ConfigureFaqModal.svelte';
+	import ConfigureRagModal from '$lib/ui/modal/ConfigureRagModal.svelte';
 	import type { AgentStatistics } from '$lib/api';
 
 	export let data;
@@ -21,6 +22,7 @@
 	let showEditModal = false;
 	let showApiConfigModal = false;
 	let showFaqConfigModal = false;
+	let showRagConfigModal = false;
 	let selectedStatsPeriod: '1d' | '1w' | '1m' = '1d';
 	let activeTab = 'overview'; // 'overview', 'configuration', 'activity', 'statistics'
 	let showFullPrompt = false;
@@ -156,6 +158,8 @@
 				return 'fas fa-plug';
 			case 'faq':
 				return 'fas fa-question-circle';
+			case 'rag_search':
+				return 'fas fa-database';
 			default:
 				return 'fas fa-tools';
 		}
@@ -177,6 +181,8 @@
 				return 'text-red-600 bg-red-500/20 dark:text-red-400';
 			case 'faq':
 				return 'text-cyan-600 bg-cyan-500/20 dark:text-cyan-400';
+			case 'rag_search':
+				return 'text-orange-600 bg-orange-500/20 dark:text-orange-400';
 			default:
 				return 'text-indigo-600 bg-indigo-500/20 dark:text-indigo-400';
 		}
@@ -377,6 +383,17 @@
 								<i class="fas fa-question-circle"></i>
 								<span class="hidden lg:inline">Configure FAQ</span>
 								<span class="lg:hidden">FAQ</span>
+							</button>
+						{/if}
+
+						{#if agent.tools && agent.tools.map((tool) => tool.name).includes('rag_search')}
+							<button
+								on:click={() => (showRagConfigModal = true)}
+								class="flex items-center space-x-2 rounded-lg border border-orange-300 bg-orange-600 px-4 py-2.5 text-white transition-colors hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 dark:border-orange-700"
+							>
+								<i class="fas fa-database"></i>
+								<span class="hidden lg:inline">Configure RAG</span>
+								<span class="lg:hidden">RAG</span>
 							</button>
 						{/if}
 					</div>
@@ -896,7 +913,9 @@
 																			? 'Make HTTP API calls'
 																			: tool === 'faq'
 																				? 'Answer frequently asked questions'
-																				: 'Custom tool functionality'}
+																				: tool === 'rag_search'
+																					? 'Search indexed documents and knowledge base'
+																					: 'Custom tool functionality'}
 												</p>
 											</div>
 										</div>
@@ -911,6 +930,13 @@
 											<button
 												on:click={() => (showFaqConfigModal = true)}
 												class="text-sm text-cyan-600 hover:text-cyan-700 dark:text-cyan-400"
+											>
+												Configure
+											</button>
+										{:else if tool === 'rag_search'}
+											<button
+												on:click={() => (showRagConfigModal = true)}
+												class="text-sm text-orange-600 hover:text-orange-700 dark:text-orange-400"
 											>
 												Configure
 											</button>
@@ -992,6 +1018,16 @@
 								>
 									<i class="fas fa-question-circle"></i>
 									<span>Configure FAQ</span>
+								</button>
+							{/if}
+
+							{#if agent.tools && agent.tools.map((tool) => tool.name).includes('rag_search')}
+								<button
+									on:click={() => (showRagConfigModal = true)}
+									class="flex w-full items-center justify-center space-x-2 rounded-lg border border-orange-300 bg-orange-600 px-4 py-2.5 text-white transition-colors hover:bg-orange-700"
+								>
+									<i class="fas fa-database"></i>
+									<span>Configure RAG</span>
 								</button>
 							{/if}
 						</div>
@@ -1510,5 +1546,10 @@
 	<!-- FAQ Configuration Modal -->
 	{#if showFaqConfigModal}
 		<ConfigureFaqModal {data} {agent} on:close={() => (showFaqConfigModal = false)} />
+	{/if}
+
+	<!-- RAG Configuration Modal -->
+	{#if showRagConfigModal}
+		<ConfigureRagModal {data} {agent} on:close={() => (showRagConfigModal = false)} />
 	{/if}
 {/if}
