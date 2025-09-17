@@ -796,63 +796,112 @@ class ApiClient {
 	}
 
 	// RAG (Retrieval-Augmented Generation) Methods
-	async indexDocuments(orgId: string, projectId: string, documentsData: any): Promise<any> {
-		const response = await this.fetch(
-			`/organizations/${orgId}/projects/${projectId}/rag/index`,
-			{
-				method: 'POST',
-				body: JSON.stringify(documentsData)
-			}
-		);
+	async indexDocuments(
+		orgId: string,
+		projectId: string,
+		documentsData: any,
+		processInBackground: boolean = true
+	): Promise<any> {
+		const payload = {
+			...documentsData,
+			process_in_background: processInBackground
+		};
+
+		const response = await this.fetch(`/organizations/${orgId}/projects/${projectId}/rag/index`, {
+			method: 'POST',
+			body: JSON.stringify(payload)
+		});
 
 		if (!response.ok) throw new Error('Failed to index documents');
 		return response.json();
 	}
 
 	async searchDocuments(orgId: string, projectId: string, searchData: any): Promise<any> {
-		const response = await this.fetch(
-			`/organizations/${orgId}/projects/${projectId}/rag/search`,
-			{
-				method: 'POST',
-				body: JSON.stringify(searchData)
-			}
-		);
+		const response = await this.fetch(`/organizations/${orgId}/projects/${projectId}/rag/search`, {
+			method: 'POST',
+			body: JSON.stringify(searchData)
+		});
 
 		if (!response.ok) throw new Error('Failed to search documents');
 		return response.json();
 	}
 
 	async getRagStats(orgId: string, projectId: string): Promise<any> {
-		const response = await this.fetch(
-			`/organizations/${orgId}/projects/${projectId}/rag/stats`
-		);
+		const response = await this.fetch(`/organizations/${orgId}/projects/${projectId}/rag/stats`);
 
 		if (!response.ok) throw new Error('Failed to fetch RAG statistics');
 		return response.json();
 	}
 
 	async clearRagKnowledgeBase(orgId: string, projectId: string): Promise<any> {
-		const response = await this.fetch(
-			`/organizations/${orgId}/projects/${projectId}/rag/clear`,
-			{
-				method: 'DELETE'
-			}
-		);
+		const response = await this.fetch(`/organizations/${orgId}/projects/${projectId}/rag/clear`, {
+			method: 'DELETE'
+		});
 
 		if (!response.ok) throw new Error('Failed to clear knowledge base');
 		return response.json();
 	}
 
-	async batchIndexDocuments(orgId: string, projectId: string, batchData: any): Promise<any> {
+	async batchIndexDocuments(
+		orgId: string,
+		projectId: string,
+		batchData: any,
+		processInBackground: boolean = true
+	): Promise<any> {
+		const payload = {
+			...batchData,
+			process_in_background: processInBackground
+		};
+
 		const response = await this.fetch(
 			`/organizations/${orgId}/projects/${projectId}/rag/batch-index`,
 			{
 				method: 'POST',
-				body: JSON.stringify(batchData)
+				body: JSON.stringify(payload)
 			}
 		);
 
 		if (!response.ok) throw new Error('Failed to batch index documents');
+		return response.json();
+	}
+
+	// Background Job Management Methods
+	async getJobStatus(orgId: string, projectId: string, jobId: string): Promise<any> {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/rag/jobs/${jobId}`
+		);
+
+		if (!response.ok) throw new Error('Failed to fetch job status');
+		return response.json();
+	}
+
+	async listJobs(orgId: string, projectId: string, limit: number = 50): Promise<any> {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/rag/jobs?limit=${limit}`
+		);
+
+		if (!response.ok) throw new Error('Failed to fetch jobs list');
+		return response.json();
+	}
+
+	async getJobStats(orgId: string, projectId: string): Promise<any> {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/rag/jobs/stats`
+		);
+
+		if (!response.ok) throw new Error('Failed to fetch job statistics');
+		return response.json();
+	}
+
+	async cancelJob(orgId: string, projectId: string, jobId: string): Promise<any> {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/rag/jobs/${jobId}`,
+			{
+				method: 'DELETE'
+			}
+		);
+
+		if (!response.ok) throw new Error('Failed to cancel job');
 		return response.json();
 	}
 
@@ -886,7 +935,12 @@ class ApiClient {
 		return response.json();
 	}
 
-	async updateVectorDbConfig(orgId: string, projectId: string, configId: string, configData: any): Promise<any> {
+	async updateVectorDbConfig(
+		orgId: string,
+		projectId: string,
+		configId: string,
+		configData: any
+	): Promise<any> {
 		const response = await this.fetch(
 			`/organizations/${orgId}/projects/${projectId}/vector-databases/${configId}`,
 			{

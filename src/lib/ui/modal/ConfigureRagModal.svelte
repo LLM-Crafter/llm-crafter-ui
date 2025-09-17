@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createEventDispatcher, onMount } from 'svelte';
+	import { createEventDispatcher, onMount, onDestroy } from 'svelte';
 	import { api } from '$lib/api';
 
 	export let data;
@@ -7,7 +7,7 @@
 
 	let loading = false;
 	let error = '';
-	let activeTab = 'configurations'; // 'configurations', 'documents', 'stats'
+	let activeTab = 'configurations'; // 'configurations', 'documents', 'stats', 'jobs'
 
 	// Vector database configurations
 	let vectorDbConfigs: any[] = [];
@@ -43,14 +43,34 @@
 	// Statistics
 	let ragStats: any = null;
 
+	// Job management for background indexing
+	let activeJobs: any[] = [];
+	let jobHistory: any[] = [];
+	let jobStats: any = null;
+	let processInBackground = true;
+	let pollingIntervals = new Map();
+
 	onMount(async () => {
 		await loadInitialData();
+	});
+
+	onDestroy(() => {
+		// Clean up polling intervals
+		pollingIntervals.forEach((interval) => {
+			clearInterval(interval);
+		});
+		pollingIntervals.clear();
 	});
 
 	async function loadInitialData() {
 		try {
 			loading = true;
-			await Promise.all([loadVectorDbConfigs(), loadSupportedProviders(), loadRagStats()]);
+			await Promise.all([
+				loadVectorDbConfigs(), 
+				loadSupportedProviders(), 
+				loadRagStats(),
+				loadJobData()
+			]);
 		} catch (err: any) {
 			error = err.message || 'Failed to load RAG configuration';
 		} finally {
@@ -113,6 +133,87 @@
 			ragStats = result.stats || null;
 		} catch (err: any) {
 			console.error('Failed to load RAG stats:', err);
+		}
+	}
+
+	async function loadJobData() {
+		try {
+			const [jobsResult, statsResult] = await Promise.all([
+				api.listJobs(data.organization_id, data.project._id),
+				api.getJobStats(data.organization_id, data.project._id)
+			]);
+			
+			jobHistory = jobsResult.jobs || [];
+			jobStats = statsResult.stats || null;
+			
+			// Separate active jobs (pending/processing) from completed/failed
+			activeJobs = jobHistory.filter(job => 
+				job.status === 'pending' || job.status === 'processing'
+			);
+
+			// Start polling for active jobs
+			activeJobs.forEach(job => {
+				if (!pollingIntervals.has(job.job_id)) {
+					startJobPolling(job.job_id);
+				}
+			});
+		} catch (err: any) {
+			console.error('Failed to load job data:', err);
+		}
+	}
+
+	function startJobPolling(jobId: string) {
+		// Clear any existing interval for this job
+		if (pollingIntervals.has(jobId)) {
+			clearInterval(pollingIntervals.get(jobId));
+		}
+
+		const pollInterval = setInterval(async () => {
+			try {
+				const result = await api.getJobStatus(data.organization_id, data.project._id, jobId);
+				const job = result.job;
+
+				// Update job in both arrays
+				const updateJobInArray = (array: any[]) => {
+					const index = array.findIndex(j => j.job_id === jobId);
+					if (index !== -1) {
+						array[index] = job;
+					}
+				};
+
+				updateJobInArray(activeJobs);
+				updateJobInArray(jobHistory);
+
+				// If job is completed or failed, stop polling
+				if (job.status === 'completed' || job.status === 'failed') {
+					clearInterval(pollInterval);
+					pollingIntervals.delete(jobId);
+					
+					// Remove from active jobs
+					activeJobs = activeJobs.filter(j => j.job_id !== jobId);
+					
+					// Refresh stats if job completed successfully
+					if (job.status === 'completed') {
+						await loadRagStats();
+					}
+				}
+			} catch (err) {
+				console.error(`Failed to poll job ${jobId}:`, err);
+				// Stop polling on error
+				clearInterval(pollInterval);
+				pollingIntervals.delete(jobId);
+			}
+		}, 5000); // Poll every 5 seconds
+
+		pollingIntervals.set(jobId, pollInterval);
+	}
+
+	async function cancelJob(jobId: string) {
+		try {
+			await api.cancelJob(data.organization_id, data.project._id, jobId);
+			await loadJobData(); // Refresh job data
+		} catch (err: any) {
+			error = err.message || 'Failed to cancel job';
 		}
 	}
 
@@ -389,19 +490,59 @@
 				api_key_id: apiKeyId
 			};
 
-			await api.indexDocuments(data.organization_id, data.project._id, documentsData);
-			await loadRagStats();
+			const result = await api.indexDocuments(
+				data.organization_id, 
+				data.project._id, 
+				documentsData,
+				processInBackground
+			);
 
-			// Reset form
-			uploadForm.documents = [
-				JSON.stringify({
-					id: `doc_${Date.now()}`,
-					title: "Example Document",
-					content: "Your document content goes here...",
-				}, null, 2)
-			];
-			uploadForm.api_key_id = '';
-			showUploadForm = false;
+			if (result.background_processing) {
+				// Background processing - show job started message
+				showUploadForm = false;
+				
+				// Add job to active jobs and start polling
+				const job = {
+					job_id: result.job_id,
+					type: 'single',
+					status: 'pending',
+					progress: {
+						total_documents: result.document_count || parsedDocuments.length,
+						processed_documents: 0,
+						successful_documents: 0,
+						failed_documents: 0,
+						indexed_chunks: 0
+					},
+					createdAt: new Date().toISOString()
+				};
+				
+				activeJobs = [job, ...activeJobs];
+				startJobPolling(result.job_id);
+				
+				// Reset form
+				uploadForm.documents = [
+					JSON.stringify({
+						id: `doc_${Date.now()}`,
+						title: "Example Document",
+						content: "Your document content goes here...",
+					}, null, 2)
+				];
+				uploadForm.api_key_id = '';
+			} else {
+				// Synchronous processing - traditional handling
+				await loadRagStats();
+				
+				// Reset form
+				uploadForm.documents = [
+					JSON.stringify({
+						id: `doc_${Date.now()}`,
+						title: "Example Document",
+						content: "Your document content goes here...",
+					}, null, 2)
+				];
+				uploadForm.api_key_id = '';
+				showUploadForm = false;
+			}
 		} catch (err: any) {
 			error = err.message || 'Failed to upload documents';
 		} finally {
@@ -489,6 +630,16 @@
 				>
 					<i class="fas fa-chart-bar"></i>
 					<span>Statistics</span>
+				</button>
+				<button
+					on:click={() => (activeTab = 'jobs')}
+					class="flex items-center space-x-2 rounded-md px-3 py-2 text-sm font-medium transition-colors {activeTab ===
+					'jobs'
+						? 'bg-gray-700 text-white'
+						: 'text-gray-400 hover:text-gray-300'}"
+				>
+					<i class="fas fa-tasks"></i>
+					<span>Jobs {#if activeJobs.length > 0}<span class="ml-1 rounded-full bg-orange-500 px-2 py-1 text-xs">{activeJobs.length}</span>{/if}</span>
 				</button>
 			</div>
 		</div>
@@ -713,6 +864,32 @@
 									<p class="mt-1 text-xs text-gray-400">
 										Optional: Specify an API key ID. If not provided, will use the project's default API key.
 									</p>
+								</div>
+							</div>
+
+							<!-- Processing Mode Toggle -->
+							<div class="mb-6 rounded-lg border border-gray-600 bg-gray-750 p-4">
+								<div class="flex items-center justify-between">
+									<div>
+										<h5 class="font-medium text-gray-200">Processing Mode</h5>
+										<p class="mt-1 text-sm text-gray-400">
+											{processInBackground 
+												? 'Documents will be processed in the background. You can monitor progress in the Jobs tab.'
+												: 'Documents will be processed synchronously. The upload will wait until indexing is complete.'
+											}
+										</p>
+									</div>
+									<label class="flex cursor-pointer items-center">
+										<input
+											type="checkbox"
+											bind:checked={processInBackground}
+											class="sr-only"
+										/>
+										<div class="relative">
+											<div class="block h-6 w-10 rounded-full {processInBackground ? 'bg-orange-600' : 'bg-gray-600'}"></div>
+											<div class="dot absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition transform {processInBackground ? 'translate-x-4' : ''}"></div>
+										</div>
+									</label>
 								</div>
 							</div>
 
@@ -955,6 +1132,187 @@
 							<p class="text-gray-400">
 								Upload some documents and perform searches to see RAG statistics.
 							</p>
+						</div>
+					{/if}
+				</div>
+			{:else if activeTab === 'jobs'}
+				<!-- Background Jobs Tab -->
+				<div class="space-y-6">
+					<div class="flex items-center justify-between">
+						<h3 class="text-lg font-semibold text-gray-100">Background Indexing Jobs</h3>
+						<button
+							on:click={() => loadJobData()}
+							disabled={loading}
+							class="inline-flex items-center space-x-2 rounded-lg border border-gray-600 px-4 py-2 text-gray-400 transition-colors hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50"
+						>
+							<i class="fas fa-sync-alt"></i>
+							<span>Refresh</span>
+						</button>
+					</div>
+
+					<!-- Active Jobs -->
+					{#if activeJobs.length > 0}
+						<div class="space-y-4">
+							<h4 class="font-medium text-gray-200">Active Jobs ({activeJobs.length})</h4>
+							{#each activeJobs as job}
+								<div class="rounded-lg border border-gray-700 bg-gray-800 p-4">
+									<div class="flex items-center justify-between">
+										<div class="flex items-center space-x-3">
+											<div class="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500/20">
+												<i class="fas fa-cog animate-spin text-orange-400"></i>
+											</div>
+											<div>
+												<div class="font-medium text-gray-100">
+													{job.type === 'single' ? 'Document Indexing' : 'Batch Indexing'}
+												</div>
+												<div class="text-sm text-gray-400">
+													Job ID: {job.job_id}
+												</div>
+											</div>
+										</div>
+										<div class="flex items-center space-x-3">
+											<div class="text-right">
+												<div class="text-sm font-medium text-gray-200">
+													{job.status === 'pending' ? 'Pending' : 'Processing'}
+												</div>
+												<div class="text-xs text-gray-400">
+													{job.progress ? `${job.progress.processed_documents}/${job.progress.total_documents} docs` : 'Starting...'}
+												</div>
+											</div>
+											<button
+												on:click={() => cancelJob(job.job_id)}
+												class="rounded p-2 text-gray-400 hover:bg-red-600/20 hover:text-red-400 focus:outline-none"
+												title="Cancel Job"
+											>
+												<i class="fas fa-times"></i>
+											</button>
+										</div>
+									</div>
+
+									{#if job.progress && job.progress.total_documents > 0}
+										<div class="mt-4">
+											<div class="mb-2 flex justify-between text-sm">
+												<span class="text-gray-400">Progress</span>
+												<span class="text-gray-300">
+													{Math.round((job.progress.processed_documents / job.progress.total_documents) * 100)}%
+												</span>
+											</div>
+											<div class="h-2 rounded-full bg-gray-700">
+												<div
+													class="h-2 rounded-full bg-orange-500 transition-all duration-300"
+													style="width: {(job.progress.processed_documents / job.progress.total_documents) * 100}%"
+												></div>
+											</div>
+											<div class="mt-2 flex justify-between text-xs text-gray-400">
+												<span>
+													{job.progress.successful_documents} successful, {job.progress.failed_documents} failed
+												</span>
+												<span>
+													{job.progress.indexed_chunks} chunks indexed
+												</span>
+											</div>
+										</div>
+									{/if}
+								</div>
+							{/each}
+						</div>
+					{/if}
+
+					<!-- Job History -->
+					<div class="space-y-4">
+						<h4 class="font-medium text-gray-200">Job History</h4>
+						
+						{#if jobHistory.length === 0}
+							<div class="py-8 text-center">
+								<div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-700">
+									<i class="fas fa-history text-2xl text-gray-400"></i>
+								</div>
+								<h5 class="mb-2 text-lg font-medium text-gray-200">No Jobs Found</h5>
+								<p class="text-gray-400">
+									Background indexing jobs will appear here once you start uploading documents.
+								</p>
+							</div>
+						{:else}
+							<div class="space-y-3">
+								{#each jobHistory.slice(0, 10) as job}
+									<div class="rounded-lg border border-gray-700 bg-gray-800 p-4">
+										<div class="flex items-center justify-between">
+											<div class="flex items-center space-x-3">
+												<div class="flex h-8 w-8 items-center justify-center rounded-full {
+													job.status === 'completed' ? 'bg-green-500/20' :
+													job.status === 'failed' ? 'bg-red-500/20' :
+													job.status === 'processing' ? 'bg-orange-500/20' :
+													'bg-gray-500/20'
+												}">
+													<i class="fas {
+														job.status === 'completed' ? 'fa-check text-green-400' :
+														job.status === 'failed' ? 'fa-times text-red-400' :
+														job.status === 'processing' ? 'fa-cog animate-spin text-orange-400' :
+														'fa-clock text-gray-400'
+													}"></i>
+												</div>
+												<div>
+													<div class="font-medium text-gray-100">
+														{job.type === 'single' ? 'Document Indexing' : 'Batch Indexing'}
+													</div>
+													<div class="text-sm text-gray-400">
+														{new Date(job.createdAt).toLocaleString()}
+													</div>
+												</div>
+											</div>
+											<div class="text-right">
+												<div class="text-sm font-medium {
+													job.status === 'completed' ? 'text-green-400' :
+													job.status === 'failed' ? 'text-red-400' :
+													job.status === 'processing' ? 'text-orange-400' :
+													'text-gray-400'
+												}">
+													{job.status === 'completed' ? 'Completed' :
+													 job.status === 'failed' ? 'Failed' :
+													 job.status === 'processing' ? 'Processing' :
+													 'Pending'}
+												</div>
+												{#if job.results && job.status === 'completed'}
+													<div class="text-xs text-gray-400">
+														{job.results.indexed_count} chunks indexed
+													</div>
+												{:else if job.error && job.status === 'failed'}
+													<div class="text-xs text-red-400" title={job.error}>
+														Error occurred
+													</div>
+												{:else if job.progress}
+													<div class="text-xs text-gray-400">
+														{job.progress.processed_documents}/{job.progress.total_documents} docs
+													</div>
+												{/if}
+											</div>
+										</div>
+									</div>
+								{/each}
+							</div>
+						{/if}
+					</div>
+
+					<!-- Job Statistics -->
+					{#if jobStats && jobStats.length > 0}
+						<div class="rounded-lg border border-gray-700 bg-gray-800 p-4">
+							<h4 class="mb-4 font-medium text-gray-100">Job Statistics</h4>
+							<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+								{#each jobStats as stat}
+									<div>
+										<div class="text-sm font-medium text-gray-300 capitalize">{stat._id} Jobs</div>
+										<div class="mt-1 text-lg font-bold text-gray-100">{stat.count}</div>
+										{#if stat.total_chunks_indexed > 0}
+											<div class="text-xs text-gray-400">{stat.total_chunks_indexed} chunks indexed</div>
+										{/if}
+										{#if stat.total_processing_time > 0}
+											<div class="text-xs text-gray-400">
+												Avg: {Math.round(stat.total_processing_time / stat.count / 1000)}s
+											</div>
+										{/if}
+									</div>
+								{/each}
+							</div>
 						</div>
 					{/if}
 				</div>
