@@ -25,6 +25,10 @@
 				return 'fas fa-code';
 			case 'api_caller':
 				return 'fas fa-plug';
+			case 'faq':
+				return 'fas fa-question-circle';
+			case 'rag_search':
+				return 'fas fa-database';
 			default:
 				return 'fas fa-tools';
 		}
@@ -44,6 +48,10 @@
 				return 'text-gray-400 bg-gray-500/10';
 			case 'api_caller':
 				return 'text-red-400 bg-red-500/10';
+			case 'faq':
+				return 'text-cyan-400 bg-cyan-500/10';
+			case 'rag_search':
+				return 'text-orange-400 bg-orange-500/10';
 			default:
 				return 'text-indigo-400 bg-indigo-500/10';
 		}
