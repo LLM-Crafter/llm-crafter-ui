@@ -30,18 +30,26 @@
 	let jsonFileInput: HTMLInputElement;
 	let uploadForm = {
 		documents: [
-			JSON.stringify({
-				id: `doc_${Date.now()}`,
-				title: "Example Document",
-				content: "Your document content goes here...",
-				// Add any other fields you need
-			}, null, 2)
+			JSON.stringify(
+				{
+					id: `doc_${Date.now()}`,
+					title: 'Example Document',
+					content: 'Your document content goes here...'
+					// Add any other fields you need
+				},
+				null,
+				2
+			)
 		],
 		api_key_id: ''
 	};
 
 	// Statistics
 	let ragStats: any = null;
+
+	// Clear knowledge base
+	let showClearConfirmation = false;
+	let isClearing = false;
 
 	// Job management for background indexing
 	let activeJobs: any[] = [];
@@ -66,8 +74,8 @@
 		try {
 			loading = true;
 			await Promise.all([
-				loadVectorDbConfigs(), 
-				loadSupportedProviders(), 
+				loadVectorDbConfigs(),
+				loadSupportedProviders(),
 				loadRagStats(),
 				loadJobData()
 			]);
@@ -139,20 +147,21 @@
 	async function loadJobData() {
 		try {
 			const [jobsResult, statsResult] = await Promise.all([
-				api.listJobs(data.organization_id, data.project._id),
-				api.getJobStats(data.organization_id, data.project._id)
+				api.listJobs(data.organization_id, data.project._id)
 			]);
-			
+
+			console.log('Jobs result:', jobsResult);
+
 			jobHistory = jobsResult.jobs || [];
-			jobStats = statsResult.stats || null;
-			
+			jobStats = null;
+
 			// Separate active jobs (pending/processing) from completed/failed
-			activeJobs = jobHistory.filter(job => 
-				job.status === 'pending' || job.status === 'processing'
+			activeJobs = jobHistory.filter(
+				(job) => job.status === 'pending' || job.status === 'processing'
 			);
 
 			// Start polling for active jobs
-			activeJobs.forEach(job => {
+			activeJobs.forEach((job) => {
 				if (!pollingIntervals.has(job.job_id)) {
 					startJobPolling(job.job_id);
 				}
@@ -175,7 +184,7 @@
 
 				// Update job in both arrays
 				const updateJobInArray = (array: any[]) => {
-					const index = array.findIndex(j => j.job_id === jobId);
+					const index = array.findIndex((j) => j.job_id === jobId);
 					if (index !== -1) {
 						array[index] = job;
 					}
@@ -188,10 +197,10 @@
 				if (job.status === 'completed' || job.status === 'failed') {
 					clearInterval(pollInterval);
 					pollingIntervals.delete(jobId);
-					
+
 					// Remove from active jobs
-					activeJobs = activeJobs.filter(j => j.job_id !== jobId);
-					
+					activeJobs = activeJobs.filter((j) => j.job_id !== jobId);
+
 					// Refresh stats if job completed successfully
 					if (job.status === 'completed') {
 						await loadRagStats();
@@ -331,21 +340,29 @@
 	function addDocument() {
 		uploadForm.documents = [
 			...uploadForm.documents,
-			JSON.stringify({
-				id: `doc_${Date.now()}`,
-				title: "New Document",
-				content: "Document content goes here...",
-			}, null, 2)
+			JSON.stringify(
+				{
+					id: `doc_${Date.now()}`,
+					title: 'New Document',
+					content: 'Document content goes here...'
+				},
+				null,
+				2
+			)
 		];
 	}
 
 	function clearAllDocuments() {
 		uploadForm.documents = [
-			JSON.stringify({
-				id: `doc_${Date.now()}`,
-				title: "New Document",
-				content: "Document content goes here...",
-			}, null, 2)
+			JSON.stringify(
+				{
+					id: `doc_${Date.now()}`,
+					title: 'New Document',
+					content: 'Document content goes here...'
+				},
+				null,
+				2
+			)
 		];
 	}
 
@@ -356,14 +373,14 @@
 	function handleDocumentJsonChange(index: number, event: Event) {
 		const textarea = event.target as HTMLTextAreaElement;
 		const jsonString = textarea.value;
-		
+
 		try {
 			// Validate JSON syntax
 			JSON.parse(jsonString);
-			
+
 			// Update the document at the specific index
 			uploadForm.documents[index] = jsonString;
-			
+
 			// Clear any error
 			error = '';
 		} catch (err) {
@@ -400,12 +417,14 @@
 				if (jsonContent.documents && Array.isArray(jsonContent.documents)) {
 					documentsArray = jsonContent.documents;
 					apiKeyId = jsonContent.api_key_id || '';
-				} 
+				}
 				// Legacy format: direct array of documents
 				else if (Array.isArray(jsonContent)) {
 					documentsArray = jsonContent;
 				} else {
-					throw new Error('JSON file must contain either an array of documents or an object with a "documents" array');
+					throw new Error(
+						'JSON file must contain either an array of documents or an object with a "documents" array'
+					);
 				}
 
 				// Store documents as JSON strings for editing
@@ -429,12 +448,12 @@
 
 				// Replace current documents with the ones from JSON
 				uploadForm.documents = validDocuments;
-				
+
 				// Set the API key if provided
 				if (apiKeyId) {
 					uploadForm.api_key_id = apiKeyId;
 				}
-				
+
 				error = '';
 
 				// Reset file input
@@ -482,7 +501,9 @@
 			// Use provided API key or fallback to project's first API key
 			const apiKeyId = uploadForm.api_key_id || (data.project as any).apiKeys?.[0]?._id;
 			if (!apiKeyId) {
-				throw new Error('No API key configured. Please provide an api_key_id or configure one for this project');
+				throw new Error(
+					'No API key configured. Please provide an api_key_id or configure one for this project'
+				);
 			}
 
 			const documentsData = {
@@ -491,8 +512,8 @@
 			};
 
 			const result = await api.indexDocuments(
-				data.organization_id, 
-				data.project._id, 
+				data.organization_id,
+				data.project._id,
 				documentsData,
 				processInBackground
 			);
@@ -500,7 +521,7 @@
 			if (result.background_processing) {
 				// Background processing - show job started message
 				showUploadForm = false;
-				
+
 				// Add job to active jobs and start polling
 				const job = {
 					job_id: result.job_id,
@@ -515,30 +536,38 @@
 					},
 					createdAt: new Date().toISOString()
 				};
-				
+
 				activeJobs = [job, ...activeJobs];
 				startJobPolling(result.job_id);
-				
+
 				// Reset form
 				uploadForm.documents = [
-					JSON.stringify({
-						id: `doc_${Date.now()}`,
-						title: "Example Document",
-						content: "Your document content goes here...",
-					}, null, 2)
+					JSON.stringify(
+						{
+							id: `doc_${Date.now()}`,
+							title: 'Example Document',
+							content: 'Your document content goes here...'
+						},
+						null,
+						2
+					)
 				];
 				uploadForm.api_key_id = '';
 			} else {
 				// Synchronous processing - traditional handling
 				await loadRagStats();
-				
+
 				// Reset form
 				uploadForm.documents = [
-					JSON.stringify({
-						id: `doc_${Date.now()}`,
-						title: "Example Document",
-						content: "Your document content goes here...",
-					}, null, 2)
+					JSON.stringify(
+						{
+							id: `doc_${Date.now()}`,
+							title: 'Example Document',
+							content: 'Your document content goes here...'
+						},
+						null,
+						2
+					)
 				];
 				uploadForm.api_key_id = '';
 				showUploadForm = false;
@@ -551,22 +580,29 @@
 	}
 
 	async function clearKnowledgeBase() {
-		if (
-			!confirm(
-				'Are you sure you want to clear all documents from the knowledge base? This action cannot be undone.'
-			)
-		) {
-			return;
-		}
+		showClearConfirmation = true;
+	}
 
+	async function confirmClearKnowledgeBase() {
 		try {
-			loading = true;
-			await api.clearRagKnowledgeBase(data.organization_id, data.project._id);
-			await loadRagStats();
+			isClearing = true;
+			showClearConfirmation = false;
+
+			const result = await api.clearRagKnowledgeBase(data.organization_id, data.project._id);
+
+			// Show success message
+			if (result.success) {
+				error = ''; // Clear any existing errors
+				// You could add a success message here or dispatch an event
+				console.log(`Successfully cleared ${result.deleted_count} documents from knowledge base`);
+			}
+
+			// Reload stats and documents
+			await Promise.all([loadRagStats(), loadJobData()]);
 		} catch (err: any) {
 			error = err.message || 'Failed to clear knowledge base';
 		} finally {
-			loading = false;
+			isClearing = false;
 		}
 	}
 </script>
@@ -639,7 +675,11 @@
 						: 'text-gray-400 hover:text-gray-300'}"
 				>
 					<i class="fas fa-tasks"></i>
-					<span>Jobs {#if activeJobs.length > 0}<span class="ml-1 rounded-full bg-orange-500 px-2 py-1 text-xs">{activeJobs.length}</span>{/if}</span>
+					<span
+						>Jobs {#if activeJobs.length > 0}<span
+								class="ml-1 rounded-full bg-orange-500 px-2 py-1 text-xs">{activeJobs.length}</span
+							>{/if}</span
+					>
 				</button>
 			</div>
 		</div>
@@ -777,14 +817,19 @@
 								<i class="fas fa-upload"></i>
 								<span>Upload Documents</span>
 							</button>
-							{#if ragStats?.total_documents > 0}
+							{#if data?.role === 'admin'}
 								<button
 									on:click={clearKnowledgeBase}
-									disabled={loading}
+									disabled={loading || isClearing}
 									class="inline-flex items-center space-x-2 rounded-lg border border-red-600 px-4 py-2 text-red-400 transition-colors hover:bg-red-600/10 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
 								>
-									<i class="fas fa-trash"></i>
-									<span>Clear All</span>
+									{#if isClearing}
+										<i class="fas fa-spinner fa-spin"></i>
+										<span>Clearing...</span>
+									{:else}
+										<i class="fas fa-trash"></i>
+										<span>Clear All</span>
+									{/if}
 								</button>
 							{/if}
 						</div>
@@ -809,7 +854,8 @@
 									<div>
 										<h5 class="font-medium text-gray-200">Import from JSON File</h5>
 										<p class="mt-1 text-sm text-gray-400">
-											Upload a JSON file with flexible document structure. Supports any JSON fields per document.
+											Upload a JSON file with flexible document structure. Supports any JSON fields
+											per document.
 										</p>
 									</div>
 									<button
@@ -852,9 +898,7 @@
 							<!-- API Key Section -->
 							<div class="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-1">
 								<div>
-									<label class="mb-2 block text-sm font-medium text-gray-300">
-										API Key ID
-									</label>
+									<label class="mb-2 block text-sm font-medium text-gray-300"> API Key ID </label>
 									<input
 										type="text"
 										bind:value={uploadForm.api_key_id}
@@ -862,32 +906,36 @@
 										class="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-gray-100 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
 									/>
 									<p class="mt-1 text-xs text-gray-400">
-										Optional: Specify an API key ID. If not provided, will use the project's default API key.
+										Optional: Specify an API key ID. If not provided, will use the project's default
+										API key.
 									</p>
 								</div>
 							</div>
 
 							<!-- Processing Mode Toggle -->
-							<div class="mb-6 rounded-lg border border-gray-600 bg-gray-750 p-4">
+							<div class="bg-gray-750 mb-6 rounded-lg border border-gray-600 p-4">
 								<div class="flex items-center justify-between">
 									<div>
 										<h5 class="font-medium text-gray-200">Processing Mode</h5>
 										<p class="mt-1 text-sm text-gray-400">
-											{processInBackground 
+											{processInBackground
 												? 'Documents will be processed in the background. You can monitor progress in the Jobs tab.'
-												: 'Documents will be processed synchronously. The upload will wait until indexing is complete.'
-											}
+												: 'Documents will be processed synchronously. The upload will wait until indexing is complete.'}
 										</p>
 									</div>
 									<label class="flex cursor-pointer items-center">
-										<input
-											type="checkbox"
-											bind:checked={processInBackground}
-											class="sr-only"
-										/>
+										<input type="checkbox" bind:checked={processInBackground} class="sr-only" />
 										<div class="relative">
-											<div class="block h-6 w-10 rounded-full {processInBackground ? 'bg-orange-600' : 'bg-gray-600'}"></div>
-											<div class="dot absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition transform {processInBackground ? 'translate-x-4' : ''}"></div>
+											<div
+												class="block h-6 w-10 rounded-full {processInBackground
+													? 'bg-orange-600'
+													: 'bg-gray-600'}"
+											></div>
+											<div
+												class="dot absolute left-1 top-1 h-4 w-4 transform rounded-full bg-white transition {processInBackground
+													? 'translate-x-4'
+													: ''}"
+											></div>
 										</div>
 									</label>
 								</div>
@@ -924,18 +972,23 @@
 											</label>
 											<textarea
 												bind:value={document}
-												placeholder={JSON.stringify({
-													"id": "unique-document-id", 
-													"title": "Document Title",
-													"content": "Your document content...",
-													"custom_field": "Any custom data you need"
-												}, null, 2)}
+												placeholder={JSON.stringify(
+													{
+														id: 'unique-document-id',
+														title: 'Document Title',
+														content: 'Your document content...',
+														custom_field: 'Any custom data you need'
+													},
+													null,
+													2
+												)}
 												rows="12"
-												class="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-gray-100 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono text-sm"
+												class="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 font-mono text-sm text-gray-100 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
 												on:input={(e) => handleDocumentJsonChange(index, e)}
 											></textarea>
 											<p class="mt-1 text-xs text-gray-400">
-												Enter any JSON structure for this document. The structure is completely flexible - add any fields you need.
+												Enter any JSON structure for this document. The structure is completely
+												flexible - add any fields you need.
 											</p>
 										</div>
 									</div>
@@ -1158,7 +1211,9 @@
 								<div class="rounded-lg border border-gray-700 bg-gray-800 p-4">
 									<div class="flex items-center justify-between">
 										<div class="flex items-center space-x-3">
-											<div class="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500/20">
+											<div
+												class="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500/20"
+											>
 												<i class="fas fa-cog animate-spin text-orange-400"></i>
 											</div>
 											<div>
@@ -1176,7 +1231,9 @@
 													{job.status === 'pending' ? 'Pending' : 'Processing'}
 												</div>
 												<div class="text-xs text-gray-400">
-													{job.progress ? `${job.progress.processed_documents}/${job.progress.total_documents} docs` : 'Starting...'}
+													{job.progress
+														? `${job.progress.processed_documents}/${job.progress.total_documents} docs`
+														: 'Starting...'}
 												</div>
 											</div>
 											<button
@@ -1194,18 +1251,23 @@
 											<div class="mb-2 flex justify-between text-sm">
 												<span class="text-gray-400">Progress</span>
 												<span class="text-gray-300">
-													{Math.round((job.progress.processed_documents / job.progress.total_documents) * 100)}%
+													{Math.round(
+														(job.progress.processed_documents / job.progress.total_documents) * 100
+													)}%
 												</span>
 											</div>
 											<div class="h-2 rounded-full bg-gray-700">
 												<div
 													class="h-2 rounded-full bg-orange-500 transition-all duration-300"
-													style="width: {(job.progress.processed_documents / job.progress.total_documents) * 100}%"
+													style="width: {(job.progress.processed_documents /
+														job.progress.total_documents) *
+														100}%"
 												></div>
 											</div>
 											<div class="mt-2 flex justify-between text-xs text-gray-400">
 												<span>
-													{job.progress.successful_documents} successful, {job.progress.failed_documents} failed
+													{job.progress.successful_documents} successful, {job.progress
+														.failed_documents} failed
 												</span>
 												<span>
 													{job.progress.indexed_chunks} chunks indexed
@@ -1221,10 +1283,12 @@
 					<!-- Job History -->
 					<div class="space-y-4">
 						<h4 class="font-medium text-gray-200">Job History</h4>
-						
+
 						{#if jobHistory.length === 0}
 							<div class="py-8 text-center">
-								<div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-700">
+								<div
+									class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-700"
+								>
 									<i class="fas fa-history text-2xl text-gray-400"></i>
 								</div>
 								<h5 class="mb-2 text-lg font-medium text-gray-200">No Jobs Found</h5>
@@ -1238,18 +1302,25 @@
 									<div class="rounded-lg border border-gray-700 bg-gray-800 p-4">
 										<div class="flex items-center justify-between">
 											<div class="flex items-center space-x-3">
-												<div class="flex h-8 w-8 items-center justify-center rounded-full {
-													job.status === 'completed' ? 'bg-green-500/20' :
-													job.status === 'failed' ? 'bg-red-500/20' :
-													job.status === 'processing' ? 'bg-orange-500/20' :
-													'bg-gray-500/20'
-												}">
-													<i class="fas {
-														job.status === 'completed' ? 'fa-check text-green-400' :
-														job.status === 'failed' ? 'fa-times text-red-400' :
-														job.status === 'processing' ? 'fa-cog animate-spin text-orange-400' :
-														'fa-clock text-gray-400'
-													}"></i>
+												<div
+													class="flex h-8 w-8 items-center justify-center rounded-full {job.status ===
+													'completed'
+														? 'bg-green-500/20'
+														: job.status === 'failed'
+															? 'bg-red-500/20'
+															: job.status === 'processing'
+																? 'bg-orange-500/20'
+																: 'bg-gray-500/20'}"
+												>
+													<i
+														class="fas {job.status === 'completed'
+															? 'fa-check text-green-400'
+															: job.status === 'failed'
+																? 'fa-times text-red-400'
+																: job.status === 'processing'
+																	? 'fa-cog animate-spin text-orange-400'
+																	: 'fa-clock text-gray-400'}"
+													></i>
 												</div>
 												<div>
 													<div class="font-medium text-gray-100">
@@ -1261,25 +1332,29 @@
 												</div>
 											</div>
 											<div class="text-right">
-												<div class="text-sm font-medium {
-													job.status === 'completed' ? 'text-green-400' :
-													job.status === 'failed' ? 'text-red-400' :
-													job.status === 'processing' ? 'text-orange-400' :
-													'text-gray-400'
-												}">
-													{job.status === 'completed' ? 'Completed' :
-													 job.status === 'failed' ? 'Failed' :
-													 job.status === 'processing' ? 'Processing' :
-													 'Pending'}
+												<div
+													class="text-sm font-medium {job.status === 'completed'
+														? 'text-green-400'
+														: job.status === 'failed'
+															? 'text-red-400'
+															: job.status === 'processing'
+																? 'text-orange-400'
+																: 'text-gray-400'}"
+												>
+													{job.status === 'completed'
+														? 'Completed'
+														: job.status === 'failed'
+															? 'Failed'
+															: job.status === 'processing'
+																? 'Processing'
+																: 'Pending'}
 												</div>
 												{#if job.results && job.status === 'completed'}
 													<div class="text-xs text-gray-400">
 														{job.results.indexed_count} chunks indexed
 													</div>
 												{:else if job.error && job.status === 'failed'}
-													<div class="text-xs text-red-400" title={job.error}>
-														Error occurred
-													</div>
+													<div class="text-xs text-red-400" title={job.error}>Error occurred</div>
 												{:else if job.progress}
 													<div class="text-xs text-gray-400">
 														{job.progress.processed_documents}/{job.progress.total_documents} docs
@@ -1300,10 +1375,12 @@
 							<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
 								{#each jobStats as stat}
 									<div>
-										<div class="text-sm font-medium text-gray-300 capitalize">{stat._id} Jobs</div>
+										<div class="text-sm font-medium capitalize text-gray-300">{stat._id} Jobs</div>
 										<div class="mt-1 text-lg font-bold text-gray-100">{stat.count}</div>
 										{#if stat.total_chunks_indexed > 0}
-											<div class="text-xs text-gray-400">{stat.total_chunks_indexed} chunks indexed</div>
+											<div class="text-xs text-gray-400">
+												{stat.total_chunks_indexed} chunks indexed
+											</div>
 										{/if}
 										{#if stat.total_processing_time > 0}
 											<div class="text-xs text-gray-400">
@@ -1472,6 +1549,66 @@
 						{/if}
 					</button>
 				</div>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Clear Knowledge Base Confirmation Modal -->
+{#if showClearConfirmation}
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="clear-modal-title"
+		on:click={() => (showClearConfirmation = false)}
+		on:keydown={(e) => e.key === 'Escape' && (showClearConfirmation = false)}
+	>
+		<div
+			class="w-full max-w-md rounded-lg border border-gray-700 bg-gray-900 p-6 shadow-xl"
+			on:click|stopPropagation
+			on:keydown|stopPropagation
+		>
+			<div class="mb-4 flex items-center space-x-3">
+				<div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+					<i class="fas fa-exclamation-triangle text-red-600"></i>
+				</div>
+				<div>
+					<h3 id="clear-modal-title" class="text-lg font-semibold text-gray-100">
+						Clear Knowledge Base
+					</h3>
+					<p class="text-sm text-gray-400">This action cannot be undone</p>
+				</div>
+			</div>
+
+			<p class="mb-6 text-gray-300">
+				Are you sure you want to clear all documents from the knowledge base? This will permanently
+				delete all indexed documents and vector embeddings.
+			</p>
+
+			<div class="flex justify-end space-x-3">
+				<button
+					type="button"
+					on:click={() => (showClearConfirmation = false)}
+					disabled={isClearing}
+					class="rounded-lg border border-gray-600 px-4 py-2 text-gray-300 transition-colors hover:bg-gray-700 disabled:opacity-50"
+				>
+					Cancel
+				</button>
+				<button
+					type="button"
+					on:click={confirmClearKnowledgeBase}
+					disabled={isClearing}
+					class="inline-flex items-center space-x-2 rounded-lg bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+				>
+					{#if isClearing}
+						<i class="fas fa-spinner fa-spin"></i>
+						<span>Clearing...</span>
+					{:else}
+						<i class="fas fa-trash"></i>
+						<span>Clear All Documents</span>
+					{/if}
+				</button>
 			</div>
 		</div>
 	</div>
