@@ -8,6 +8,7 @@
 	import ConfigureApiEndpointsModal from '$lib/ui/modal/ConfigureApiEndpointsModal.svelte';
 	import ConfigureFaqModal from '$lib/ui/modal/ConfigureFaqModal.svelte';
 	import ConfigureRagModal from '$lib/ui/modal/ConfigureRagModal.svelte';
+	import ViewConversationModal from '$lib/ui/modal/ViewConversationModal.svelte';
 	import type { AgentStatistics } from '$lib/api';
 
 	export let data;
@@ -23,6 +24,8 @@
 	let showApiConfigModal = false;
 	let showFaqConfigModal = false;
 	let showRagConfigModal = false;
+	let showViewConversationModal = false;
+	let selectedConversationId = null;
 	let selectedStatsPeriod: '1d' | '1w' | '1m' = '1d';
 	let activeTab = 'overview'; // 'overview', 'configuration', 'activity', 'statistics'
 	let showFullPrompt = false;
@@ -196,6 +199,11 @@
 			hour: '2-digit',
 			minute: '2-digit'
 		});
+	}
+
+	function openConversationModal(conversationId) {
+		selectedConversationId = conversationId;
+		showViewConversationModal = true;
 	}
 
 	async function handleAgentUpdated() {
@@ -1115,6 +1123,7 @@
 												<p class="text-xs text-gray-500 dark:text-gray-400">Cost</p>
 											</div>
 											<button
+												on:click={() => openConversationModal(conversation._id)}
 												class="rounded-lg bg-indigo-600 px-3 py-1 text-sm text-white hover:bg-indigo-700"
 											>
 												View
@@ -1551,5 +1560,18 @@
 	<!-- RAG Configuration Modal -->
 	{#if showRagConfigModal}
 		<ConfigureRagModal {data} {agent} on:close={() => (showRagConfigModal = false)} />
+	{/if}
+
+	<!-- View Conversation Modal -->
+	{#if showViewConversationModal && selectedConversationId && agent}
+		<ViewConversationModal 
+			{data} 
+			{agent} 
+			conversationId={selectedConversationId}
+			on:close={() => {
+				showViewConversationModal = false;
+				selectedConversationId = null;
+			}} 
+		/>
 	{/if}
 {/if}
