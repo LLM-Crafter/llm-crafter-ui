@@ -631,6 +631,30 @@ class ApiClient {
 		return response.json();
 	}
 
+	async chatWithAgentStream(orgId: string, projectId: string, agentId: string, chatData: any) {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/agents/${agentId}/chat/stream`,
+			{
+				method: 'POST',
+				body: JSON.stringify(chatData)
+			}
+		);
+		if (!response.ok) throw new Error('Failed to start streaming chat with agent');
+		return response;
+	}
+
+	async executeTaskAgentStream(orgId: string, projectId: string, agentId: string, executionData: any) {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/agents/${agentId}/execute/stream`,
+			{
+				method: 'POST',
+				body: JSON.stringify(executionData)
+			}
+		);
+		if (!response.ok) throw new Error('Failed to start streaming task execution');
+		return response;
+	}
+
 	async getAgentConversations(orgId: string, projectId: string, agentId: string) {
 		const response = await this.fetch(
 			`/organizations/${orgId}/projects/${projectId}/agents/${agentId}/conversations`

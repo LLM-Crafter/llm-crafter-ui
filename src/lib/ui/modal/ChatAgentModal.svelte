@@ -14,6 +14,9 @@
 	let contextInput = '';
 	let contextError = '';
 	let currentSuggestions = []; // Track current suggestions to display
+	let isStreaming = false;
+	let streamingResponse = '';
+	let streamingMessageIndex = -1;
 
 	function getToolIcon(toolId) {
 		switch (toolId) {
@@ -62,7 +65,7 @@
 	}
 
 	async function sendMessage() {
-		if (!currentMessage.trim() || loading) return;
+		if (!currentMessage.trim() || loading || isStreaming) return;
 
 		// Parse context if provided
 		let context = null;
@@ -88,6 +91,16 @@
 		const messageToSend = currentMessage;
 		currentMessage = '';
 		currentSuggestions = []; // Clear suggestions when user sends a message
+
+		// Check if streaming is enabled for this agent
+		if (agent.config?.enable_streaming) {
+			await sendMessageStreaming(messageToSend, context);
+		} else {
+			await sendMessageRegular(messageToSend, context);
+		}
+	}
+
+	async function sendMessageRegular(messageToSend: string, context: any) {
 		loading = true;
 
 		try {
@@ -141,6 +154,134 @@
 			loading = false;
 		}
 	}
+
+	async function sendMessageStreaming(messageToSend: string, context: any) {
+		isStreaming = true;
+		streamingResponse = '';
+
+		// Add placeholder message for streaming response
+		const botMessage = {
+			role: 'assistant',
+			content: '',
+			timestamp: new Date(),
+			thinking: null,
+			tools_used: null,
+			isStreaming: true
+		};
+
+		messages = [...messages, botMessage];
+		streamingMessageIndex = messages.length - 1;
+
+		try {
+			const requestBody: any = {
+				message: messageToSend,
+				user_identifier: 'user-123', // In a real app, this would be the actual user ID
+				conversation_id: conversationId
+			};
+
+			// Add context if provided
+			if (context) {
+				requestBody.context = context;
+			}
+
+			const response = await api.chatWithAgentStream(
+				data.organization_id,
+				data.project._id,
+				agent._id,
+				requestBody
+			);
+
+			if (!response.ok) {
+				throw new Error('Failed to start streaming chat');
+			}
+
+			const reader = response.body.getReader();
+			const decoder = new TextDecoder();
+
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+
+				const chunk = decoder.decode(value);
+				const lines = chunk.split('\n');
+
+				for (const line of lines) {
+					if (line.startsWith('data: ')) {
+						try {
+							const data = JSON.parse(line.substring(6));
+
+							if (data.type === 'connected') {
+								// Stream established
+								continue;
+							} else if (data.type === 'response_chunk') {
+								// Update streaming response
+								streamingResponse += data.content;
+								updateStreamingMessage();
+							} else if (data.type === 'complete') {
+								// Streaming complete
+								if (data.conversation_id && !conversationId) {
+									conversationId = data.conversation_id;
+								}
+
+								// Update the message with final data
+								const finalMessage = {
+									role: 'assistant',
+									content: streamingResponse,
+									timestamp: new Date(),
+									thinking: data.thinking,
+									tools_used: data.tools_used,
+									isStreaming: false
+								};
+
+								messages[streamingMessageIndex] = finalMessage;
+								messages = [...messages]; // Trigger reactivity
+
+								// Update suggestions
+								if (data.suggestions && data.suggestions.length > 0) {
+									currentSuggestions = data.suggestions;
+								} else {
+									currentSuggestions = [];
+								}
+
+								break;
+							} else if (data.type === 'error') {
+								throw new Error(data.error);
+							}
+						} catch (parseError) {
+							console.error('Failed to parse streaming data:', parseError);
+						}
+					}
+				}
+			}
+		} catch (error) {
+			console.error('Failed to stream message:', error);
+			const errorMessage = {
+				role: 'error',
+				content: 'Failed to get response from agent. Please try again.',
+				timestamp: new Date()
+			};
+
+			// Replace streaming message with error
+			messages[streamingMessageIndex] = errorMessage;
+			messages = [...messages]; // Trigger reactivity
+		} finally {
+			isStreaming = false;
+			streamingResponse = '';
+			streamingMessageIndex = -1;
+		}
+	}
+
+	function updateStreamingMessage() {
+		if (streamingMessageIndex >= 0 && streamingMessageIndex < messages.length) {
+			messages[streamingMessageIndex] = {
+				...messages[streamingMessageIndex],
+				content: streamingResponse
+			};
+			messages = [...messages]; // Trigger reactivity
+		}
+	}
+
+
 
 	function handleKeyPress(event) {
 		if (event.key === 'Enter' && !event.shiftKey) {
@@ -257,7 +398,13 @@
 										<span class="text-xs text-gray-500">{formatTime(message.timestamp)}</span>
 									</div>
 
-									<div class="mb-2 whitespace-pre-wrap text-gray-100">{message.content}</div>
+									<div class="mb-2 whitespace-pre-wrap text-gray-100">
+										{message.content}
+										{#if message.isStreaming}
+											<span class="ml-1 inline-block h-2 w-2 animate-pulse rounded-full bg-blue-400"
+											></span>
+										{/if}
+									</div>
 
 									{#if message.thinking}
 										<details class="mt-2">
@@ -301,7 +448,7 @@
 				{/each}
 			{/if}
 
-			{#if loading}
+			{#if loading && !isStreaming}
 				<div class="flex justify-start">
 					<div class="max-w-[70%] rounded-lg border border-gray-700 bg-gray-800 px-4 py-2">
 						<div class="flex items-center space-x-2">
@@ -349,7 +496,7 @@
 					{#each currentSuggestions as suggestion, index}
 						<button
 							on:click={() => sendSuggestion(suggestion)}
-							disabled={loading}
+							disabled={loading || isStreaming}
 							class="inline-flex items-center rounded-lg border border-gray-600 bg-gradient-to-r from-gray-700 to-gray-600 px-4 py-2 text-sm text-gray-200 shadow-sm transition-all hover:from-gray-600 hover:to-gray-500 hover:text-white hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
 							style="animation-delay: {index * 100}ms"
 						>
@@ -421,17 +568,17 @@
 						on:keydown={handleKeyPress}
 						placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"
 						rows="1"
-						disabled={loading}
+						disabled={loading || isStreaming}
 						class="w-full resize-none rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-gray-100 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
 						style="min-height: 44px; max-height: 120px;"
 					></textarea>
 				</div>
 				<button
 					on:click={sendMessage}
-					disabled={!currentMessage.trim() || loading}
+					disabled={!currentMessage.trim() || loading || isStreaming}
 					class="flex h-11 w-11 items-center justify-center rounded-lg bg-indigo-600 text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
 				>
-					{#if loading}
+					{#if loading || isStreaming}
 						<i class="fas fa-spinner fa-spin"></i>
 					{:else}
 						<i class="fas fa-paper-plane"></i>

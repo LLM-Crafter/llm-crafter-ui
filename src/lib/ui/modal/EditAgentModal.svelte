@@ -29,6 +29,9 @@
 	let suggestionsCustomPrompt =
 		(agent.question_suggestions && agent.question_suggestions.custom_prompt) || '';
 
+	// Initialize streaming configuration
+	let streamingEnabled = agent.config?.enable_streaming !== undefined ? agent.config.enable_streaming : true;
+
 	// Derived provider for suggestions API key
 	$: suggestionsProvider = suggestionsApiKeyId
 		? (data.project as any).apiKeys?.find((api_key: any) => api_key._id === suggestionsApiKeyId)
@@ -166,6 +169,9 @@
 				},
 				tools: selectedTools,
 				is_active: isActive,
+				config: {
+					enable_streaming: streamingEnabled
+				},
 				question_suggestions: {
 					enabled: suggestionsEnabled,
 					count: suggestionsCount,
@@ -457,6 +463,37 @@
 						</div>
 					</div>
 				{/if}
+			</div>
+
+			<!-- Streaming Configuration -->
+			<div class="space-y-6">
+				<div class="flex items-center space-x-2">
+					<i class="fas fa-stream text-blue-400"></i>
+					<h3 class="text-lg font-semibold text-gray-100">Response Streaming</h3>
+				</div>
+
+				<!-- Enable/Disable Toggle -->
+				<div
+					class="flex items-center justify-between rounded-lg border border-gray-700 bg-gray-800 p-4"
+				>
+					<div>
+						<h4 class="font-medium text-gray-100">Enable Response Streaming</h4>
+						<p class="text-sm text-gray-400">
+							Stream responses in real-time as they're generated for better user experience
+						</p>
+					</div>
+					<label class="relative inline-flex cursor-pointer items-center">
+						<input
+							type="checkbox"
+							bind:checked={streamingEnabled}
+							disabled={loading}
+							class="peer sr-only"
+						/>
+						<div
+							class="peer h-6 w-11 rounded-full bg-gray-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-indigo-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300"
+						></div>
+					</label>
+				</div>
 			</div>
 
 			<!-- Question Suggestions Configuration -->

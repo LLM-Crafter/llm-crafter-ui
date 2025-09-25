@@ -31,6 +31,9 @@
 	let suggestionsModel = '';
 	let suggestionsCustomPrompt = '';
 
+	// Streaming
+	let streamingEnabled = true;
+
 	// Derived provider based on selected API key
 	$: provider = apiKeyId
 		? (data.project as any).apiKeys?.find((api_key: any) => api_key._id === apiKeyId)?.provider
@@ -182,6 +185,9 @@
 				},
 				tools: selectedTools,
 				is_active: true,
+				config: {
+					enable_streaming: streamingEnabled
+				},
 				question_suggestions: {
 					enabled: suggestionsEnabled,
 					count: suggestionsCount,
@@ -537,6 +543,38 @@
 							</div>
 						</div>
 					{/if}
+
+					<!-- Streaming Configuration -->
+					<div class="space-y-4">
+						<div>
+							<h4 class="text-lg font-semibold text-gray-100">Response Streaming</h4>
+							<p class="text-sm text-gray-400">
+								Configure real-time streaming response behavior for chat interactions
+							</p>
+						</div>
+
+						<div
+							class="flex items-center justify-between rounded-lg border border-gray-700 bg-gray-800 p-4"
+						>
+							<div>
+								<h5 class="font-medium text-gray-100">Enable Response Streaming</h5>
+								<p class="text-sm text-gray-400">
+									Stream responses in real-time as they're generated for better user experience
+								</p>
+							</div>
+							<label class="relative inline-flex cursor-pointer items-center">
+								<input
+									type="checkbox"
+									bind:checked={streamingEnabled}
+									disabled={loading}
+									class="peer sr-only"
+								/>
+								<div
+									class="peer h-6 w-11 rounded-full bg-gray-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-indigo-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300"
+								></div>
+							</label>
+						</div>
+					</div>
 				</div>
 			{:else if step === 4}
 				<!-- Step 4: Question Suggestions Configuration -->

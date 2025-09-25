@@ -11,6 +11,10 @@
 	let result = null;
 	let error = '';
 
+	// Streaming variables
+	let isStreaming = false;
+	let streamingResponse = '';
+
 	function getToolIcon(toolId) {
 		switch (toolId) {
 			case 'web_search':
@@ -58,11 +62,21 @@
 	}
 
 	async function executeAgent() {
-		if (!input.trim() || loading) return;
+		if (!input.trim() || loading || isStreaming) return;
 
-		loading = true;
 		error = '';
 		result = null;
+
+		// Check if streaming is enabled for this agent
+		if (agent.config?.enable_streaming) {
+			await executeAgentStreaming();
+		} else {
+			await executeAgentRegular();
+		}
+	}
+
+	async function executeAgentRegular() {
+		loading = true;
 
 		try {
 			const response = await api.executeAgent(data.organization_id, data.project._id, agent._id, {
@@ -75,6 +89,86 @@
 			error = err.message || 'Failed to execute agent';
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function executeAgentStreaming() {
+		isStreaming = true;
+		streamingResponse = '';
+
+		// Initialize result for streaming
+		result = {
+			output: '',
+			thinking: null,
+			tools_used: null,
+			isStreaming: true
+		};
+
+		try {
+			const response = await api.executeTaskAgentStream(
+				data.organization_id,
+				data.project._id,
+				agent._id,
+				{
+					input: input,
+					user_identifier: 'user-123' // In a real app, this would be the actual user ID
+				}
+			);
+
+			if (!response.ok) {
+				throw new Error('Failed to start streaming execution');
+			}
+
+			const reader = response.body.getReader();
+			const decoder = new TextDecoder();
+
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+
+				const chunk = decoder.decode(value);
+				const lines = chunk.split('\n');
+
+				for (const line of lines) {
+					if (line.startsWith('data: ')) {
+						try {
+							const data = JSON.parse(line.substring(6));
+
+							if (data.type === 'connected') {
+								// Stream established
+								continue;
+							} else if (data.type === 'response_chunk') {
+								// Update streaming response
+								streamingResponse += data.content;
+								result = {
+									...result,
+									output: streamingResponse,
+									isStreaming: true
+								};
+							} else if (data.type === 'complete') {
+								// Streaming complete
+								result = {
+									output: streamingResponse,
+									thinking: data.thinking,
+									tools_used: data.tools_used,
+									isStreaming: false
+								};
+								break;
+							} else if (data.type === 'error') {
+								throw new Error(data.error);
+							}
+						} catch (parseError) {
+							console.error('Failed to parse streaming data:', parseError);
+						}
+					}
+				}
+			}
+		} catch (err) {
+			error = err.message || 'Failed to execute agent with streaming';
+			result = null;
+		} finally {
+			isStreaming = false;
+			streamingResponse = '';
 		}
 	}
 
@@ -191,12 +285,15 @@
 
 					<button
 						on:click={executeAgent}
-						disabled={!input.trim() || loading}
+						disabled={!input.trim() || loading || isStreaming}
 						class="inline-flex items-center space-x-2 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-2 text-white transition-all hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						{#if loading}
 							<i class="fas fa-spinner fa-spin"></i>
 							<span>Executing...</span>
+						{:else if isStreaming}
+							<i class="fas fa-circle-notch fa-spin"></i>
+							<span>Streaming...</span>
 						{:else}
 							<i class="fas fa-play"></i>
 							<span>Execute Agent</span>
@@ -261,11 +358,22 @@
 						<h4 class="mb-3 flex items-center space-x-2 font-medium text-gray-300">
 							<i class="fas fa-output text-green-400"></i>
 							<span>Output</span>
+							{#if result.isStreaming}
+								<div class="flex items-center space-x-1 text-blue-400">
+									<div class="animate-spin">
+										<i class="fas fa-circle-notch text-xs"></i>
+									</div>
+									<span class="text-xs">Streaming...</span>
+								</div>
+							{/if}
 						</h4>
 						<div
 							class="whitespace-pre-wrap rounded-lg bg-gray-900 p-4 font-mono text-sm text-gray-100"
 						>
 							{result.output || result.response || 'No output generated'}
+							{#if result.isStreaming}
+								<span class="animate-pulse text-gray-500">▋</span>
+							{/if}
 						</div>
 					</div>
 
