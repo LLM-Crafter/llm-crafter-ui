@@ -63,8 +63,22 @@
 			id: 'rag_search',
 			name: 'RAG Search',
 			description: 'Search indexed documents and knowledge base using RAG'
+		},
+		{
+			id: 'request_human_handoff',
+			name: 'Human Handoff',
+			description: 'Request human operator intervention for complex issues or frustrated users'
 		}
 	];
+
+	// Filter tools based on agent type
+	$: filteredTools = availableTools.filter(tool => {
+		// Human handoff is only available for chatbot agents
+		if (tool.id === 'request_human_handoff') {
+			return agent.type === 'chatbot';
+		}
+		return true;
+	});
 
 	function toggleTool(toolId) {
 		if (selectedTools.includes(toolId)) {
@@ -92,6 +106,8 @@
 				return 'fas fa-question-circle';
 			case 'rag_search':
 				return 'fas fa-database';
+			case 'request_human_handoff':
+				return 'fas fa-hand-paper';
 			default:
 				return 'fas fa-tools';
 		}
@@ -115,6 +131,8 @@
 				return 'from-cyan-500 to-teal-500';
 			case 'rag_search':
 				return 'from-orange-500 to-red-500';
+			case 'request_human_handoff':
+				return 'from-indigo-500 to-blue-500';
 			default:
 				return 'from-indigo-500 to-purple-600';
 		}
@@ -415,7 +433,7 @@
 				</div>
 
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					{#each availableTools as tool}
+					{#each filteredTools as tool}
 						<button
 							type="button"
 							on:click={() => toggleTool(tool.id)}

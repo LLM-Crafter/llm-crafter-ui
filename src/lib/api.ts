@@ -643,7 +643,12 @@ class ApiClient {
 		return response;
 	}
 
-	async executeTaskAgentStream(orgId: string, projectId: string, agentId: string, executionData: any) {
+	async executeTaskAgentStream(
+		orgId: string,
+		projectId: string,
+		agentId: string,
+		executionData: any
+	) {
 		const response = await this.fetch(
 			`/organizations/${orgId}/projects/${projectId}/agents/${agentId}/execute/stream`,
 			{
@@ -669,6 +674,79 @@ class ApiClient {
 		);
 		if (!response.ok) throw new Error('Failed to fetch executions');
 		return response.json();
+	}
+
+	// Human Handoff Methods
+	async getPendingHandoffs(params?: { page?: number; limit?: number; urgency?: string }) {
+		const searchParams = new URLSearchParams();
+		if (params?.page) searchParams.set('page', params.page.toString());
+		if (params?.limit) searchParams.set('limit', params.limit.toString());
+		if (params?.urgency) searchParams.set('urgency', params.urgency);
+
+		const response = await this.fetch(`/handoffs/pending?${searchParams}`);
+		if (!response.ok) throw new Error('Failed to fetch pending handoffs');
+		return response.json();
+	}
+
+	async getMyConversations(params?: { page?: number; limit?: number }) {
+		const searchParams = new URLSearchParams();
+		if (params?.page) searchParams.set('page', params.page.toString());
+		if (params?.limit) searchParams.set('limit', params.limit.toString());
+
+		const response = await this.fetch(`/handoffs/my-conversations?${searchParams}`);
+		if (!response.ok) throw new Error('Failed to fetch my conversations');
+		return response.json();
+	}
+
+	async getHandoffConversation(conversationId: string) {
+		const response = await this.fetch(`/handoffs/conversations/${conversationId}`);
+		if (!response.ok) throw new Error('Failed to fetch conversation');
+		return response.json();
+	}
+
+	async getLatestMessages(conversationId: string, since?: string) {
+		const searchParams = new URLSearchParams();
+		if (since) searchParams.set('since', since);
+
+		const response = await this.fetch(`/conversations/${conversationId}/messages/latest?${searchParams}`);
+		if (!response.ok) throw new Error('Failed to fetch latest messages');
+		return response.json();
+	}
+
+	async takeoverConversation(conversationId: string, message?: string) {
+		const response = await this.fetch(`/handoffs/conversations/${conversationId}/takeover`, {
+			method: 'POST',
+			body: JSON.stringify(message ? { message } : {})
+		});
+		if (!response.ok) throw new Error('Failed to takeover conversation');
+		return response.json();
+	}
+
+	async sendHandoffMessage(conversationId: string, message: string) {
+		const response = await this.fetch(`/handoffs/conversations/${conversationId}/message`, {
+			method: 'POST',
+			body: JSON.stringify({ message })
+		});
+		if (!response.ok) throw new Error('Failed to send message');
+		return response.json();
+	}
+
+	async handbackToAgent(conversationId: string) {
+		const response = await this.fetch(`/handoffs/conversations/${conversationId}/handback`, {
+			method: 'POST'
+		});
+		if (!response.ok) throw new Error('Failed to hand back to agent');
+		return response.json();
+	}
+
+	async streamHandoffConversation(conversationId: string) {
+		const response = await this.fetch(`/handoffs/conversations/${conversationId}/stream`, {
+			headers: {
+				Accept: 'text/event-stream'
+			}
+		});
+		if (!response.ok) throw new Error('Failed to start handoff stream');
+		return response;
 	}
 
 	// API Endpoint Configuration Methods
