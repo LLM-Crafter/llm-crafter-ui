@@ -8,6 +8,7 @@
 	import ConfigureApiEndpointsModal from '$lib/ui/modal/ConfigureApiEndpointsModal.svelte';
 	import ConfigureFaqModal from '$lib/ui/modal/ConfigureFaqModal.svelte';
 	import ConfigureRagModal from '$lib/ui/modal/ConfigureRagModal.svelte';
+	import ConfigureWebSearchModal from '$lib/ui/modal/ConfigureWebSearchModal.svelte';
 	import ViewConversationModal from '$lib/ui/modal/ViewConversationModal.svelte';
 	import type { AgentStatistics } from '$lib/api';
 
@@ -24,6 +25,7 @@
 	let showApiConfigModal = false;
 	let showFaqConfigModal = false;
 	let showRagConfigModal = false;
+	let showWebSearchConfigModal = false;
 	let showViewConversationModal = false;
 	let selectedConversationId = null;
 	let selectedStatsPeriod: '1d' | '1w' | '1m' = '1d';
@@ -402,6 +404,17 @@
 								<i class="fas fa-database"></i>
 								<span class="hidden lg:inline">Configure RAG</span>
 								<span class="lg:hidden">RAG</span>
+							</button>
+						{/if}
+
+						{#if agent.tools && agent.tools.map((tool) => tool.name).includes('web_search')}
+							<button
+								on:click={() => (showWebSearchConfigModal = true)}
+								class="flex items-center space-x-2 rounded-lg border border-blue-300 bg-blue-600 px-4 py-2.5 text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-blue-700"
+							>
+								<i class="fas fa-search"></i>
+								<span class="hidden lg:inline">Configure Web Search</span>
+								<span class="lg:hidden">Web Search</span>
 							</button>
 						{/if}
 					</div>
@@ -948,6 +961,13 @@
 											>
 												Configure
 											</button>
+										{:else if tool === 'web_search'}
+											<button
+												on:click={() => (showWebSearchConfigModal = true)}
+												class="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+											>
+												Configure
+											</button>
 										{/if}
 									</div>
 								{/each}
@@ -1038,9 +1058,277 @@
 									<span>Configure RAG</span>
 								</button>
 							{/if}
+
+							{#if agent.tools && agent.tools.map((tool) => tool.name).includes('web_search')}
+								<button
+									on:click={() => (showWebSearchConfigModal = true)}
+									class="flex w-full items-center justify-center space-x-2 rounded-lg border border-blue-300 bg-blue-600 px-4 py-2.5 text-white transition-colors hover:bg-blue-700"
+								>
+									<i class="fas fa-search"></i>
+									<span>Configure Web Search</span>
+								</button>
+							{/if}
 						</div>
 					</div>
 				</div>
+			</div>
+		{/if}
+
+		{#if activeTab === 'configuration'}
+			<!-- Configuration Tab -->
+			<div class="space-y-6">
+				<!-- Tool Configurations -->
+				<div
+					class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900"
+				>
+					<h2 class="mb-6 text-xl font-semibold text-gray-900 dark:text-gray-100">
+						Tool Configurations
+					</h2>
+
+					{#if agent.tools && agent.tools.length > 0}
+						<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+							{#each agent.tools.map((tool) => tool.name) as tool}
+								<div class="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+									<div class="mb-4 flex items-center justify-between">
+										<div class="flex items-center space-x-3">
+											<div class="rounded-md {getToolColor(tool)} p-2">
+												<i class="{getToolIcon(tool)} text-sm"></i>
+											</div>
+											<div>
+												<h3 class="font-medium capitalize text-gray-900 dark:text-gray-100">
+													{tool.replace('_', ' ')}
+												</h3>
+												<p class="text-sm text-gray-500 dark:text-gray-400">
+													{tool === 'web_search'
+														? 'Configure web search providers and API keys'
+														: tool === 'api_caller'
+															? 'Configure external API endpoints'
+															: tool === 'faq'
+																? 'Manage frequently asked questions'
+																: tool === 'rag_search'
+																	? 'Configure document search and indexing'
+																	: tool === 'calculator'
+																		? 'Mathematical calculation tool (no configuration needed)'
+																		: tool === 'llm_prompt'
+																			? 'LLM text generation tool (no configuration needed)'
+																			: tool === 'current_time'
+																				? 'Date and time tool (no configuration needed)'
+																				: tool === 'json_processor'
+																					? 'JSON processing tool (no configuration needed)'
+																					: 'Tool functionality'}
+												</p>
+											</div>
+										</div>
+										{#if tool === 'web_search'}
+											<button
+												on:click={() => (showWebSearchConfigModal = true)}
+												class="rounded-lg bg-blue-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-blue-700"
+											>
+												Configure
+											</button>
+										{:else if tool === 'api_caller'}
+											<button
+												on:click={() => (showApiConfigModal = true)}
+												class="rounded-lg bg-red-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-red-700"
+											>
+												Configure
+											</button>
+										{:else if tool === 'faq'}
+											<button
+												on:click={() => (showFaqConfigModal = true)}
+												class="rounded-lg bg-cyan-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-cyan-700"
+											>
+												Configure
+											</button>
+										{:else if tool === 'rag_search'}
+											<button
+												on:click={() => (showRagConfigModal = true)}
+												class="rounded-lg bg-orange-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-orange-700"
+											>
+												Configure
+											</button>
+										{:else}
+											<span class="px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400">
+												No configuration
+											</span>
+										{/if}
+									</div>
+
+									<!-- Tool Status -->
+									<div class="flex items-center space-x-2 text-sm">
+										{#if tool === 'web_search' || tool === 'api_caller' || tool === 'faq' || tool === 'rag_search'}
+											<div class="flex items-center space-x-1">
+												<div class="h-2 w-2 rounded-full bg-yellow-500"></div>
+												<span class="text-gray-600 dark:text-gray-400">Configuration required</span>
+											</div>
+										{:else}
+											<div class="flex items-center space-x-1">
+												<div class="h-2 w-2 rounded-full bg-green-500"></div>
+												<span class="text-gray-600 dark:text-gray-400">Ready to use</span>
+											</div>
+										{/if}
+									</div>
+								</div>
+							{/each}
+						</div>
+					{:else}
+						<div class="py-8 text-center">
+							<div
+								class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
+							>
+								<i class="fas fa-tools text-2xl text-gray-400"></i>
+							</div>
+							<h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-gray-100">
+								No Tools Configured
+							</h3>
+							<p class="mb-4 text-gray-600 dark:text-gray-400">
+								This agent doesn't have any tools configured. Add tools to expand its capabilities.
+							</p>
+							<button
+								on:click={() => (showEditModal = true)}
+								class="inline-flex items-center space-x-2 rounded-lg bg-indigo-600 px-4 py-2 text-white transition-colors hover:bg-indigo-700"
+							>
+								<i class="fas fa-edit"></i>
+								<span>Edit Agent</span>
+							</button>
+						</div>
+					{/if}
+				</div>
+
+				<!-- Agent Settings -->
+				<div
+					class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900"
+				>
+					<h2 class="mb-6 text-xl font-semibold text-gray-900 dark:text-gray-100">
+						Agent Settings
+					</h2>
+
+					<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+						<!-- LLM Configuration -->
+						<div class="space-y-4">
+							<h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Language Model</h3>
+							<div class="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+								<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+									<div>
+										<label class="text-sm font-medium text-gray-600 dark:text-gray-400">Model</label
+										>
+										<p class="mt-1 text-gray-900 dark:text-gray-100">
+											{agent.llm_settings?.model || 'Default'}
+										</p>
+									</div>
+									<div>
+										<label class="text-sm font-medium text-gray-600 dark:text-gray-400"
+											>Temperature</label
+										>
+										<p class="mt-1 text-gray-900 dark:text-gray-100">
+											{agent.llm_settings?.parameters?.temperature || '0.7'}
+										</p>
+									</div>
+									<div>
+										<label class="text-sm font-medium text-gray-600 dark:text-gray-400"
+											>Max Tokens</label
+										>
+										<p class="mt-1 text-gray-900 dark:text-gray-100">
+											{agent.llm_settings?.parameters?.max_tokens || '4096'}
+										</p>
+									</div>
+									<div>
+										<label class="text-sm font-medium text-gray-600 dark:text-gray-400">Top P</label
+										>
+										<p class="mt-1 text-gray-900 dark:text-gray-100">
+											{agent.llm_settings?.parameters?.top_p || '1.0'}
+										</p>
+									</div>
+								</div>
+								<div class="mt-4">
+									<button
+										on:click={() => (showEditModal = true)}
+										class="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+									>
+										Edit LLM Settings
+									</button>
+								</div>
+							</div>
+						</div>
+
+						<!-- Agent Metadata -->
+						<div class="space-y-4">
+							<h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Metadata</h3>
+							<div class="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+								<div class="space-y-3">
+									<div>
+										<label class="text-sm font-medium text-gray-600 dark:text-gray-400"
+											>Agent ID</label
+										>
+										<p class="mt-1 font-mono text-sm text-gray-900 dark:text-gray-100">
+											{data.agent_id}
+										</p>
+									</div>
+									<div>
+										<label class="text-sm font-medium text-gray-600 dark:text-gray-400">Type</label>
+										<p class="mt-1 text-sm capitalize text-gray-900 dark:text-gray-100">
+											{agent.type}
+										</p>
+									</div>
+									<div>
+										<label class="text-sm font-medium text-gray-600 dark:text-gray-400"
+											>Status</label
+										>
+										<p class="mt-1 text-sm">
+											<span
+												class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium {agent.is_active
+													? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+													: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}"
+											>
+												{agent.is_active ? 'Active' : 'Inactive'}
+											</span>
+										</p>
+									</div>
+									<div>
+										<label class="text-sm font-medium text-gray-600 dark:text-gray-400"
+											>Version</label
+										>
+										<p class="mt-1 text-sm text-gray-900 dark:text-gray-100">
+											{agent.version || '1.0.0'}
+										</p>
+									</div>
+								</div>
+								<div class="mt-4">
+									<button
+										on:click={() => (showEditModal = true)}
+										class="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+									>
+										Edit Agent Details
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- System Prompt Configuration -->
+				{#if agent.system_prompt}
+					<div
+						class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900"
+					>
+						<div class="mb-4 flex items-center justify-between">
+							<h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">System Prompt</h2>
+							<button
+								on:click={() => (showEditModal = true)}
+								class="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+							>
+								Edit Prompt
+							</button>
+						</div>
+						<div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+							<pre
+								class="whitespace-pre-wrap text-sm text-gray-900 dark:text-gray-100">{agent.system_prompt}</pre>
+						</div>
+						<div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+							{agent.system_prompt.length} characters
+						</div>
+					</div>
+				{/if}
 			</div>
 		{/if}
 
@@ -1562,16 +1850,21 @@
 		<ConfigureRagModal {data} {agent} on:close={() => (showRagConfigModal = false)} />
 	{/if}
 
+	<!-- Web Search Configuration Modal -->
+	{#if showWebSearchConfigModal}
+		<ConfigureWebSearchModal {data} {agent} on:close={() => (showWebSearchConfigModal = false)} />
+	{/if}
+
 	<!-- View Conversation Modal -->
 	{#if showViewConversationModal && selectedConversationId && agent}
-		<ViewConversationModal 
-			{data} 
-			{agent} 
+		<ViewConversationModal
+			{data}
+			{agent}
 			conversationId={selectedConversationId}
 			on:close={() => {
 				showViewConversationModal = false;
 				selectedConversationId = null;
-			}} 
+			}}
 		/>
 	{/if}
 {/if}
