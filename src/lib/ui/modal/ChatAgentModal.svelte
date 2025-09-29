@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher, onDestroy } from 'svelte';
 	import { api } from '$lib/api';
 
 	export let data;
@@ -17,6 +17,25 @@
 	let isStreaming = false;
 	let streamingResponse = '';
 	let streamingMessageIndex = -1;
+
+	// Chat states according to documentation
+	const ChatStates = {
+		NORMAL_CHAT: 'normal_chat',
+		WAITING_FOR_HUMAN: 'waiting_human',
+		HUMAN_ACTIVE: 'human_active',
+		RECONNECTING: 'reconnecting'
+	};
+
+	// Enhanced handoff state
+	let chatState = ChatStates.NORMAL_CHAT;
+	let conversationStatus = 'agent_controlled';
+	let currentHandler = 'agent';
+	let handoffInfo = null;
+	let humanOperator = null;
+	let isPolling = false;
+	let pollInterval = null;
+	let humanStream = null;
+	let lastMessageTimestamp = null;
 
 	function getToolIcon(toolId) {
 		switch (toolId) {
@@ -36,6 +55,8 @@
 				return 'fas fa-question-circle';
 			case 'rag_search':
 				return 'fas fa-database';
+			case 'request_human_handoff':
+				return 'fas fa-hand-paper';
 			default:
 				return 'fas fa-tools';
 		}
@@ -59,6 +80,8 @@
 				return 'text-cyan-400 bg-cyan-500/10';
 			case 'rag_search':
 				return 'text-orange-400 bg-orange-500/10';
+			case 'request_human_handoff':
+				return 'text-indigo-400 bg-indigo-500/10';
 			default:
 				return 'text-indigo-400 bg-red-500/10';
 		}
@@ -66,6 +89,11 @@
 
 	async function sendMessage() {
 		if (!currentMessage.trim() || loading || isStreaming) return;
+
+		// Don't send if waiting for human connection or reconnecting
+		if (chatState === ChatStates.WAITING_FOR_HUMAN || chatState === ChatStates.RECONNECTING) {
+			return;
+		}
 
 		// Parse context if provided
 		let context = null;
@@ -88,11 +116,13 @@
 		};
 
 		messages = [...messages, userMessage];
+		lastMessageTimestamp = new Date().toISOString();
 		const messageToSend = currentMessage;
 		currentMessage = '';
 		currentSuggestions = []; // Clear suggestions when user sends a message
 
-		// Check if streaming is enabled for this agent
+		// Always send messages to AI agent endpoint, regardless of chat state
+		// The backend will handle routing to human operators when needed
 		if (agent.config?.enable_streaming) {
 			await sendMessageStreaming(messageToSend, context);
 		} else {
@@ -126,21 +156,66 @@
 				conversationId = response.conversation_id;
 			}
 
-			const botMessage = {
-				role: 'assistant',
-				content: response.response,
-				timestamp: new Date(),
-				thinking: response.thinking,
-				tools_used: response.tools_used
-			};
+			// Handle different response types according to updated API
+			let handoffDetected = false;
+			let handoffData = response;
 
-			messages = [...messages, botMessage];
+			// Check new format first
+			if (response.handoff_requested) {
+				handoffDetected = true;
+			} else if (response.tools_used) {
+				// Check legacy format - look for request_human_handoff tool
+				const handoffTool = response.tools_used.find(
+					(tool) =>
+						tool.tool_name === 'request_human_handoff' &&
+						tool.success &&
+						tool.result?.handoff_requested
+				);
 
-			// Update current suggestions to display separately
-			if (response.suggestions && response.suggestions.length > 0) {
-				currentSuggestions = response.suggestions;
+				if (handoffTool) {
+					handoffDetected = true;
+					// Create handoff data in new format for consistent handling
+					handoffData = {
+						...response,
+						handoff_requested: true,
+						handoff_info: {
+							reason: handoffTool.parameters?.reason || 'Agent requested human assistance',
+							urgency: handoffTool.parameters?.urgency || 'medium',
+							context_summary: handoffTool.parameters?.context_summary,
+							status: 'handoff_requested',
+							requested_at: new Date().toISOString()
+						}
+					};
+				}
+			}
+
+			if (handoffDetected) {
+				// AI requested human intervention
+				handleHandoffRequested(handoffData);
+			} else if (
+				response.status === 'message_queued' ||
+				(chatState === ChatStates.HUMAN_ACTIVE && !response.handoff_requested)
+			) {
+				// Message sent to human operator - don't add a system message, just wait for human response via polling
+				// The user message is already in the messages array, human response will come via polling
 			} else {
-				currentSuggestions = [];
+				// Normal AI response
+				const botMessage = {
+					role: 'assistant',
+					content: response.response,
+					timestamp: new Date(),
+					thinking: response.thinking_process || response.thinking,
+					tools_used: response.tools_used
+				};
+
+				messages = [...messages, botMessage];
+
+				// Update current suggestions to display separately
+				if (response.suggestions && response.suggestions.length > 0) {
+					currentSuggestions = response.suggestions;
+				} else {
+					currentSuggestions = [];
+				}
 			}
 		} catch (error) {
 			console.error('Failed to send message:', error);
@@ -159,18 +234,21 @@
 		isStreaming = true;
 		streamingResponse = '';
 
-		// Add placeholder message for streaming response
-		const botMessage = {
-			role: 'assistant',
-			content: '',
-			timestamp: new Date(),
-			thinking: null,
-			tools_used: null,
-			isStreaming: true
-		};
+		// Only add placeholder message for streaming response if not in human active state
+		// When human is active, the response will come via polling, not streaming
+		if (chatState !== ChatStates.HUMAN_ACTIVE) {
+			const botMessage = {
+				role: 'assistant',
+				content: '',
+				timestamp: new Date(),
+				thinking: null,
+				tools_used: null,
+				isStreaming: true
+			};
 
-		messages = [...messages, botMessage];
-		streamingMessageIndex = messages.length - 1;
+			messages = [...messages, botMessage];
+			streamingMessageIndex = messages.length - 1;
+		}
 
 		try {
 			const requestBody: any = {
@@ -214,38 +292,127 @@
 								// Stream established
 								continue;
 							} else if (data.type === 'response_chunk') {
-								// Update streaming response
-								streamingResponse += data.content;
-								updateStreamingMessage();
+								// Update streaming response only if we have a streaming message placeholder
+								if (streamingMessageIndex >= 0) {
+									streamingResponse += data.content;
+									updateStreamingMessage();
+								}
 							} else if (data.type === 'complete') {
 								// Streaming complete
 								if (data.conversation_id && !conversationId) {
 									conversationId = data.conversation_id;
 								}
 
-								// Update the message with final data
-								const finalMessage = {
-									role: 'assistant',
-									content: streamingResponse,
-									timestamp: new Date(),
-									thinking: data.thinking,
-									tools_used: data.tools_used,
-									isStreaming: false
-								};
+								console.log('Streaming complete event received:', data);
 
-								messages[streamingMessageIndex] = finalMessage;
-								messages = [...messages]; // Trigger reactivity
+								// Check for handoff using universal detection or legacy tools_used detection first
+								console.log('Checking for handoff_requested:', data.handoff_requested);
 
-								// Update suggestions
-								if (data.suggestions && data.suggestions.length > 0) {
-									currentSuggestions = data.suggestions;
-								} else {
-									currentSuggestions = [];
+								let handoffDetected = false;
+								let handoffData = data;
+
+								// Check new format first
+								if (data.handoff_requested) {
+									console.log(
+										'Handoff detected in streaming complete (new format):',
+										data.handoff_info
+									);
+									handoffDetected = true;
+								} else if (data.tools_used) {
+									// Check legacy format - look for request_human_handoff tool
+									const handoffTool = data.tools_used.find(
+										(tool) =>
+											tool.tool_name === 'request_human_handoff' &&
+											tool.success &&
+											tool.result?.handoff_requested
+									);
+
+									if (handoffTool) {
+										console.log(
+											'Handoff detected in streaming complete (legacy format):',
+											handoffTool
+										);
+										handoffDetected = true;
+										// Create handoff data in new format for consistent handling
+										handoffData = {
+											...data,
+											handoff_requested: true,
+											handoff_info: {
+												reason:
+													handoffTool.parameters?.reason || 'Agent requested human assistance',
+												urgency: handoffTool.parameters?.urgency || 'medium',
+												context_summary: handoffTool.parameters?.context_summary,
+												status: 'handoff_requested',
+												requested_at: new Date().toISOString()
+											}
+										};
+									}
 								}
 
+								if (handoffDetected) {
+									// Remove the empty streaming message placeholder since handoff was requested
+									if (streamingMessageIndex >= 0) {
+										messages.splice(streamingMessageIndex, 1);
+										messages = [...messages]; // Trigger reactivity
+									}
+									// Handle handoff request
+									handleHandoffRequested(handoffData);
+								} else {
+									// No handoff detected - finalize the streaming message normally
+									if (streamingMessageIndex >= 0) {
+										const finalMessage = {
+											role: 'assistant',
+											content: streamingResponse,
+											timestamp: new Date(),
+											thinking: data.thinking_process || data.thinking,
+											tools_used: data.tools_used,
+											isStreaming: false
+										};
+										messages[streamingMessageIndex] = finalMessage;
+									}
+									
+									console.log('No handoff detected, updating suggestions');
+									// Update suggestions for normal completion
+									if (data.suggestions && data.suggestions.length > 0) {
+										currentSuggestions = data.suggestions;
+									} else {
+										currentSuggestions = [];
+									}
+								}
+
+								messages = [...messages]; // Trigger reactivity
+								break;
+							} else if (data.type === 'handoff_requested') {
+								console.log('Handoff requested event received during streaming:', data);
+								// Handle handoff during streaming
+								// Remove empty streaming message placeholder since handoff was requested
+								if (streamingMessageIndex >= 0) {
+									messages.splice(streamingMessageIndex, 1);
+									messages = [...messages];
+								}
+
+								// Handle handoff request
+								handleHandoffRequested(data);
 								break;
 							} else if (data.type === 'error') {
 								throw new Error(data.error);
+							} else {
+								// Log any unhandled event types to help debug
+								console.log('Unhandled streaming event:', data);
+
+								// Check if this event contains handoff information
+								if (data.handoff_requested) {
+									console.log('Handoff detected in unhandled event:', data);
+									// Remove empty streaming message placeholder since handoff was requested
+									if (streamingMessageIndex >= 0) {
+										messages.splice(streamingMessageIndex, 1);
+										messages = [...messages];
+									}
+
+									// Handle handoff request
+									handleHandoffRequested(data);
+									break;
+								}
 							}
 						} catch (parseError) {
 							console.error('Failed to parse streaming data:', parseError);
@@ -261,8 +428,13 @@
 				timestamp: new Date()
 			};
 
-			// Replace streaming message with error
-			messages[streamingMessageIndex] = errorMessage;
+			// Replace streaming message with error only if we have a streaming message
+			if (streamingMessageIndex >= 0) {
+				messages[streamingMessageIndex] = errorMessage;
+			} else {
+				// Add error message if no streaming message was created
+				messages = [...messages, errorMessage];
+			}
 			messages = [...messages]; // Trigger reactivity
 		} finally {
 			isStreaming = false;
@@ -281,7 +453,169 @@
 		}
 	}
 
+	function handleHandoffRequested(responseData: any) {
+		console.log('Handling handoff request:', responseData);
 
+		// Update state
+		chatState = ChatStates.WAITING_FOR_HUMAN;
+		conversationStatus = 'handoff_requested';
+		currentHandler = 'agent';
+
+		// Use the structured handoff_info from the API response
+		handoffInfo = responseData.handoff_info || {
+			reason: 'Agent requested human assistance',
+			urgency: 'medium',
+			status: 'handoff_requested',
+			requested_at: new Date().toISOString()
+		};
+
+		console.log('Handoff info set:', handoffInfo);
+
+		// Add handoff notification message
+		let notificationContent =
+			responseData.response ||
+			responseData.message ||
+			'Your request has been forwarded to a human operator. Please wait while we connect you with someone who can better assist you.';
+
+		// Add handoff context if available
+		if (handoffInfo.reason && handoffInfo.reason !== 'Agent requested human assistance') {
+			notificationContent += `\n\nReason: ${handoffInfo.reason}`;
+		}
+
+		const handoffMessage = {
+			role: 'system',
+			content: notificationContent,
+			timestamp: new Date(),
+			isHandoffNotification: true,
+			handoffInfo: handoffInfo
+		};
+		messages = [...messages, handoffMessage];
+
+		console.log('Starting polling for human response');
+		// Start polling for human response
+		startPollingForHumanResponse();
+	}
+
+	function startPollingForHumanResponse() {
+		if (isPolling || !conversationId) return;
+
+		isPolling = true;
+
+		const poll = async () => {
+			try {
+				const response = await api.getLatestMessages(conversationId, lastMessageTimestamp);
+
+				// Check for new messages
+				if (response.new_messages && response.new_messages.length > 0) {
+					response.new_messages.forEach((msg) => {
+						if (msg.role === 'human_operator') {
+							// Human operator message
+							const humanMessage = {
+								role: 'human_operator',
+								content: msg.content,
+								timestamp: new Date(msg.timestamp),
+								operator_name: msg.operator_info?.name || 'Support Agent'
+							};
+							messages = [...messages, humanMessage];
+							lastMessageTimestamp = msg.timestamp;
+						} else if (msg.role === 'system') {
+							// System messages (connection established, etc.)
+							let content = msg.content;
+							
+							// If this is a generic connection message and we have operator info, personalize it
+							if (content.includes('You are now connected with Support Agent from our support team') && 
+								response.operator_info?.name && 
+								response.operator_info.name !== 'Support Agent') {
+								content = `You are now connected with ${response.operator_info.name} from our support team.`;
+							}
+							
+							// Check for duplicates before adding
+							const isDuplicate = messages.some(existingMsg => 
+								existingMsg.role === 'system' && 
+								existingMsg.content && 
+								existingMsg.content.includes('You are now connected with') &&
+								existingMsg.content.includes('from our support team')
+							);
+							
+							if (!isDuplicate) {
+								const systemMessage = {
+									role: 'system',
+									content: content,
+									timestamp: new Date(msg.timestamp),
+									isSystemMessage: true
+								};
+								messages = [...messages, systemMessage];
+							}
+							lastMessageTimestamp = msg.timestamp;
+						}
+					});
+				}
+
+				// Check conversation state changes
+				if (response.current_handler !== currentHandler) {
+					currentHandler = response.current_handler;
+
+					if (currentHandler === 'human') {
+						// Human connected
+						chatState = ChatStates.HUMAN_ACTIVE;
+						humanOperator = response.operator_info || { name: 'Support Agent' };
+
+						// Check if we already have a connection message to avoid duplicates
+						const hasConnectionMessage = messages.some(msg => 
+							msg.role === 'system' && 
+							msg.content && 
+							msg.content.includes('You are now connected with') &&
+							msg.content.includes('from our support team')
+						);
+
+						// Only add connection message if not already present
+						if (!hasConnectionMessage) {
+							const connectionMessage = {
+								role: 'system',
+								content: `You are now connected with ${humanOperator.name} from our support team.`,
+								timestamp: new Date(),
+								isSystemMessage: true
+							};
+							messages = [...messages, connectionMessage];
+						}
+					} else if (currentHandler === 'agent') {
+						// Conversation returned to AI
+						chatState = ChatStates.NORMAL_CHAT;
+						humanOperator = null;
+						stopPollingForHumanResponse();
+
+						const resumeMessage = {
+							role: 'system',
+							content: 'You are now back with our AI assistant.',
+							timestamp: new Date(),
+							isSystemMessage: true
+						};
+						messages = [...messages, resumeMessage];
+					}
+				}
+
+				// Update conversation status
+				if (response.conversation_status !== conversationStatus) {
+					conversationStatus = response.conversation_status;
+				}
+			} catch (error) {
+				console.error('Polling error:', error);
+				chatState = ChatStates.RECONNECTING;
+				// Continue polling to recover from temporary errors
+			}
+		};
+
+		// Poll every 2 seconds while waiting for human
+		pollInterval = setInterval(poll, 2000);
+	}
+
+	function stopPollingForHumanResponse() {
+		if (pollInterval) {
+			clearInterval(pollInterval);
+			pollInterval = null;
+		}
+		isPolling = false;
+	}
 
 	function handleKeyPress(event) {
 		if (event.key === 'Enter' && !event.shiftKey) {
@@ -289,6 +623,54 @@
 			sendMessage();
 		}
 	}
+
+	function getInputPlaceholder() {
+		switch (chatState) {
+			case ChatStates.WAITING_FOR_HUMAN:
+				return 'Connecting you with support...';
+			case ChatStates.HUMAN_ACTIVE:
+				return `Message ${humanOperator?.name || 'support team'}...`;
+			case ChatStates.RECONNECTING:
+				return 'Reconnecting...';
+			default:
+				return 'Type your message...';
+		}
+	}
+
+	function isInputDisabled() {
+		return (
+			chatState === ChatStates.WAITING_FOR_HUMAN ||
+			chatState === ChatStates.RECONNECTING ||
+			loading ||
+			isStreaming
+		);
+	}
+
+	// Auto-scroll functionality
+	let messagesContainer: HTMLElement;
+
+	function scrollToBottom() {
+		if (messagesContainer) {
+			messagesContainer.scrollTo({
+				top: messagesContainer.scrollHeight,
+				behavior: 'smooth'
+			});
+		}
+	}
+
+	// Auto-scroll when messages change
+	$: if (messages.length > 0) {
+		// Use a small delay to ensure DOM is updated
+		setTimeout(scrollToBottom, 10);
+	}
+
+	// Cleanup function
+	onDestroy(() => {
+		stopPollingForHumanResponse();
+		if (humanStream) {
+			humanStream.close();
+		}
+	});
 
 	function formatTime(timestamp) {
 		return new Date(timestamp).toLocaleTimeString('en-US', {
@@ -340,7 +722,31 @@
 				</div>
 				<div>
 					<h2 class="text-lg font-bold text-white">{agent.name}</h2>
-					<p class="text-sm text-gray-400">Chat with AI Agent</p>
+					<div class="flex items-center space-x-2">
+						<p class="text-sm text-gray-400">Chat with AI Agent</p>
+						{#if chatState === ChatStates.WAITING_FOR_HUMAN}
+							<span
+								class="inline-flex items-center rounded-full bg-yellow-500/10 px-2 py-1 text-xs font-medium text-yellow-400"
+							>
+								<i class="fas fa-clock mr-1"></i>
+								Waiting for Human
+							</span>
+						{:else if chatState === ChatStates.HUMAN_ACTIVE}
+							<span
+								class="inline-flex items-center rounded-full bg-green-500/10 px-2 py-1 text-xs font-medium text-green-400"
+							>
+								<i class="fas fa-user mr-1"></i>
+								{humanOperator?.name || 'Support Agent'}
+							</span>
+						{:else if chatState === ChatStates.RECONNECTING}
+							<span
+								class="inline-flex items-center rounded-full bg-orange-500/10 px-2 py-1 text-xs font-medium text-orange-400"
+							>
+								<i class="fas fa-wifi mr-1"></i>
+								Reconnecting
+							</span>
+						{/if}
+					</div>
 				</div>
 			</div>
 			<button
@@ -353,7 +759,7 @@
 		</div>
 
 		<!-- Messages Container -->
-		<div class="flex-1 space-y-4 overflow-y-auto p-4">
+		<div bind:this={messagesContainer} class="flex-1 space-y-4 overflow-y-auto p-4">
 			{#if messages.length === 0}
 				<div class="py-8 text-center">
 					<div
@@ -433,6 +839,57 @@
 											{/each}
 										</div>
 									{/if}
+								</div>
+							{:else if message.role === 'human_operator'}
+								<div class="rounded-lg border border-green-700 bg-green-800 px-4 py-2">
+									<div class="mb-2 flex items-center space-x-2">
+										<div
+											class="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-r from-green-500 to-emerald-500"
+										>
+											<i class="fas fa-user text-xs text-white"></i>
+										</div>
+										<span class="text-sm font-medium text-green-100"
+											>{message.operator_name || 'Support Agent'}</span
+										>
+										<span class="text-xs text-green-300">{formatTime(message.timestamp)}</span>
+									</div>
+
+									<div class="whitespace-pre-wrap text-green-50">
+										{message.content}
+									</div>
+								</div>
+							{:else if message.role === 'system'}
+								<div class="flex justify-center">
+									<div class="max-w-md rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-2">
+										<div class="flex items-start space-x-2">
+											<i
+												class="fas fa-{message.isHandoffNotification
+													? 'hand-paper'
+													: 'info-circle'} text-sm text-{message.isHandoffNotification
+													? 'yellow'
+													: 'blue'}-400 mt-0.5"
+											></i>
+											<div class="flex-1">
+												<div class="whitespace-pre-wrap text-sm text-gray-300">
+													{message.content}
+												</div>
+												{#if message.handoffInfo}
+													<div class="mt-2 text-xs text-gray-400">
+														<div class="flex items-center space-x-2">
+															<span>Priority: {message.handoffInfo.urgency || 'medium'}</span>
+															{#if message.handoffInfo.requested_at}
+																<span
+																	>• Requested: {new Date(
+																		message.handoffInfo.requested_at
+																	).toLocaleTimeString()}</span
+																>
+															{/if}
+														</div>
+													</div>
+												{/if}
+											</div>
+										</div>
+									</div>
 								</div>
 							{:else if message.role === 'error'}
 								<div class="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2">
@@ -559,6 +1016,51 @@
 			{/if}
 		</div>
 
+		<!-- Chat State Indicator -->
+		{#if chatState !== ChatStates.NORMAL_CHAT}
+			<div class="border-t border-gray-800 bg-gray-900/50 px-4 py-3">
+				<div class="flex items-center space-x-2">
+					{#if chatState === ChatStates.WAITING_FOR_HUMAN}
+						<div class="flex space-x-1">
+							<div class="h-2 w-2 animate-bounce rounded-full bg-yellow-400"></div>
+							<div
+								class="h-2 w-2 animate-bounce rounded-full bg-yellow-400"
+								style="animation-delay: 0.1s"
+							></div>
+							<div
+								class="h-2 w-2 animate-bounce rounded-full bg-yellow-400"
+								style="animation-delay: 0.2s"
+							></div>
+						</div>
+						<span class="text-sm text-yellow-400">Connecting you with support...</span>
+						{#if handoffInfo?.urgency}
+							<span
+								class="rounded-full px-2 py-1 text-xs bg-{handoffInfo.urgency === 'high'
+									? 'red'
+									: handoffInfo.urgency === 'medium'
+										? 'yellow'
+										: 'gray'}-500/20 text-{handoffInfo.urgency === 'high'
+									? 'red'
+									: handoffInfo.urgency === 'medium'
+										? 'yellow'
+										: 'gray'}-400"
+							>
+								{handoffInfo.urgency} priority
+							</span>
+						{/if}
+					{:else if chatState === ChatStates.HUMAN_ACTIVE}
+						<i class="fas fa-user text-green-400"></i>
+						<span class="text-sm text-green-400"
+							>Connected with {humanOperator?.name || 'Support Agent'}</span
+						>
+					{:else if chatState === ChatStates.RECONNECTING}
+						<i class="fas fa-wifi animate-pulse text-orange-400"></i>
+						<span class="text-sm text-orange-400">Reconnecting...</span>
+					{/if}
+				</div>
+			</div>
+		{/if}
+
 		<!-- Input Area -->
 		<div class="border-t border-gray-800 p-4">
 			<div class="flex items-end space-x-3">
@@ -566,16 +1068,16 @@
 					<textarea
 						bind:value={currentMessage}
 						on:keydown={handleKeyPress}
-						placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"
+						placeholder="{getInputPlaceholder()} (Press Enter to send, Shift+Enter for new line)"
 						rows="1"
-						disabled={loading || isStreaming}
+						disabled={isInputDisabled()}
 						class="w-full resize-none rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-gray-100 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
 						style="min-height: 44px; max-height: 120px;"
 					></textarea>
 				</div>
 				<button
 					on:click={sendMessage}
-					disabled={!currentMessage.trim() || loading || isStreaming}
+					disabled={!currentMessage.trim() || isInputDisabled()}
 					class="flex h-11 w-11 items-center justify-center rounded-lg bg-indigo-600 text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
 				>
 					{#if loading || isStreaming}

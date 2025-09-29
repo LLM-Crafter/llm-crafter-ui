@@ -65,8 +65,22 @@
 			id: 'rag_search',
 			name: 'RAG Search',
 			description: 'Search indexed documents and knowledge base using RAG'
+		},
+		{
+			id: 'request_human_handoff',
+			name: 'Human Handoff',
+			description: 'Request human operator intervention for complex issues or frustrated users'
 		}
 	];
+
+	// Filter tools based on agent type
+	$: filteredTools = availableTools.filter(tool => {
+		// Human handoff is only available for chatbot agents
+		if (tool.id === 'request_human_handoff') {
+			return type === 'chatbot';
+		}
+		return true;
+	});
 
 	function nextStep() {
 		if (step < 4) {
@@ -106,6 +120,8 @@
 				return 'fas fa-question-circle';
 			case 'rag_search':
 				return 'fas fa-database';
+			case 'request_human_handoff':
+				return 'fas fa-hand-paper';
 			default:
 				return 'fas fa-tools';
 		}
@@ -129,6 +145,8 @@
 				return 'from-cyan-500 to-teal-500';
 			case 'rag_search':
 				return 'from-orange-500 to-red-500';
+			case 'request_human_handoff':
+				return 'from-indigo-500 to-blue-500';
 			default:
 				return 'from-indigo-500 to-purple-600';
 		}
@@ -495,7 +513,7 @@
 					</div>
 
 					<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-						{#each availableTools as tool}
+						{#each filteredTools as tool}
 							<button
 								type="button"
 								on:click={() => toggleTool(tool.id)}
@@ -533,7 +551,7 @@
 							<h4 class="mb-2 font-medium text-indigo-400">Selected Tools:</h4>
 							<div class="flex flex-wrap gap-2">
 								{#each selectedTools as toolId}
-									{@const tool = availableTools.find((t) => t.id === toolId)}
+									{@const tool = filteredTools.find((t) => t.id === toolId)}
 									<span
 										class="inline-flex items-center rounded-md bg-indigo-500/20 px-2.5 py-0.5 text-sm font-medium text-indigo-400"
 									>
