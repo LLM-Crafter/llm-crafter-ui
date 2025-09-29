@@ -803,6 +803,32 @@ class ApiClient {
 		return response.json();
 	}
 
+	// Webpage Scraper Configuration Methods
+	async getAgentWebpageScraperConfig(orgId: string, projectId: string, agentId: string) {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/agents/${agentId}/webpage-scraper-config`
+		);
+		if (!response.ok) throw new Error('Failed to fetch webpage scraper configuration');
+		return response.json();
+	}
+
+	async configureAgentWebpageScraper(
+		orgId: string,
+		projectId: string,
+		agentId: string,
+		configData: any
+	) {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/agents/${agentId}/webpage-scraper-config`,
+			{
+				method: 'POST',
+				body: JSON.stringify(configData)
+			}
+		);
+		if (!response.ok) throw new Error('Failed to configure webpage scraper');
+		return response.json();
+	}
+
 	async register(name: string, email: string, password: string) {
 		const response = await this.fetch('/auth/register', {
 			method: 'POST',

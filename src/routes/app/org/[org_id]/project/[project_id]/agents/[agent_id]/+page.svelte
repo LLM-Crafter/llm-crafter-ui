@@ -9,6 +9,7 @@
 	import ConfigureFaqModal from '$lib/ui/modal/ConfigureFaqModal.svelte';
 	import ConfigureRagModal from '$lib/ui/modal/ConfigureRagModal.svelte';
 	import ConfigureWebSearchModal from '$lib/ui/modal/ConfigureWebSearchModal.svelte';
+	import ConfigureWebpageScraperModal from '$lib/ui/modal/ConfigureWebpageScraperModal.svelte';
 	import ViewConversationModal from '$lib/ui/modal/ViewConversationModal.svelte';
 	import type { AgentStatistics } from '$lib/api';
 
@@ -26,6 +27,7 @@
 	let showFaqConfigModal = false;
 	let showRagConfigModal = false;
 	let showWebSearchConfigModal = false;
+	let showWebpageScraperConfigModal = false;
 	let showViewConversationModal = false;
 	let selectedConversationId = null;
 	let selectedStatsPeriod: '1d' | '1w' | '1m' = '1d';
@@ -151,6 +153,8 @@
 		switch (toolId) {
 			case 'web_search':
 				return 'fas fa-search';
+			case 'webpage_scraper':
+				return 'fas fa-globe';
 			case 'calculator':
 				return 'fas fa-calculator';
 			case 'llm_prompt':
@@ -174,6 +178,8 @@
 		switch (toolId) {
 			case 'web_search':
 				return 'text-blue-600 bg-blue-500/20 dark:text-blue-400';
+			case 'webpage_scraper':
+				return 'text-purple-600 bg-purple-500/20 dark:text-purple-400';
 			case 'calculator':
 				return 'text-green-600 bg-green-500/20 dark:text-green-400';
 			case 'llm_prompt':
@@ -415,6 +421,17 @@
 								<i class="fas fa-search"></i>
 								<span class="hidden lg:inline">Configure Web Search</span>
 								<span class="lg:hidden">Web Search</span>
+							</button>
+						{/if}
+
+						{#if agent.tools && agent.tools.map((tool) => tool.name).includes('webpage_scraper')}
+							<button
+								on:click={() => (showWebpageScraperConfigModal = true)}
+								class="flex items-center space-x-2 rounded-lg border border-purple-300 bg-purple-600 px-4 py-2.5 text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:border-purple-700"
+							>
+								<i class="fas fa-globe"></i>
+								<span class="hidden lg:inline">Configure Webpage Scraper</span>
+								<span class="lg:hidden">Scraper</span>
 							</button>
 						{/if}
 					</div>
@@ -922,21 +939,23 @@
 												<p class="text-sm text-gray-500 dark:text-gray-400">
 													{tool === 'web_search'
 														? 'Search the web for information'
-														: tool === 'calculator'
-															? 'Perform mathematical calculations'
-															: tool === 'llm_prompt'
-																? 'Generate text using LLM'
-																: tool === 'current_time'
-																	? 'Get current date and time'
-																	: tool === 'json_processor'
-																		? 'Process and manipulate JSON data'
-																		: tool === 'api_caller'
-																			? 'Make HTTP API calls'
-																			: tool === 'faq'
-																				? 'Answer frequently asked questions'
-																				: tool === 'rag_search'
-																					? 'Search indexed documents and knowledge base'
-																					: 'Custom tool functionality'}
+														: tool === 'webpage_scraper'
+															? 'Extract content from web pages'
+															: tool === 'calculator'
+																? 'Perform mathematical calculations'
+																: tool === 'llm_prompt'
+																	? 'Generate text using LLM'
+																	: tool === 'current_time'
+																		? 'Get current date and time'
+																		: tool === 'json_processor'
+																			? 'Process and manipulate JSON data'
+																			: tool === 'api_caller'
+																				? 'Make HTTP API calls'
+																				: tool === 'faq'
+																					? 'Answer frequently asked questions'
+																					: tool === 'rag_search'
+																						? 'Search indexed documents and knowledge base'
+																						: 'Custom tool functionality'}
 												</p>
 											</div>
 										</div>
@@ -965,6 +984,13 @@
 											<button
 												on:click={() => (showWebSearchConfigModal = true)}
 												class="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+											>
+												Configure
+											</button>
+										{:else if tool === 'webpage_scraper'}
+											<button
+												on:click={() => (showWebpageScraperConfigModal = true)}
+												class="text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400"
 											>
 												Configure
 											</button>
@@ -1068,6 +1094,16 @@
 									<span>Configure Web Search</span>
 								</button>
 							{/if}
+
+							{#if agent.tools && agent.tools.map((tool) => tool.name).includes('webpage_scraper')}
+								<button
+									on:click={() => (showWebpageScraperConfigModal = true)}
+									class="flex w-full items-center justify-center space-x-2 rounded-lg border border-purple-300 bg-purple-600 px-4 py-2.5 text-white transition-colors hover:bg-purple-700"
+								>
+									<i class="fas fa-globe"></i>
+									<span>Configure Webpage Scraper</span>
+								</button>
+							{/if}
 						</div>
 					</div>
 				</div>
@@ -1101,21 +1137,23 @@
 												<p class="text-sm text-gray-500 dark:text-gray-400">
 													{tool === 'web_search'
 														? 'Configure web search providers and API keys'
-														: tool === 'api_caller'
-															? 'Configure external API endpoints'
-															: tool === 'faq'
-																? 'Manage frequently asked questions'
-																: tool === 'rag_search'
-																	? 'Configure document search and indexing'
-																	: tool === 'calculator'
-																		? 'Mathematical calculation tool (no configuration needed)'
-																		: tool === 'llm_prompt'
-																			? 'LLM text generation tool (no configuration needed)'
-																			: tool === 'current_time'
-																				? 'Date and time tool (no configuration needed)'
-																				: tool === 'json_processor'
-																					? 'JSON processing tool (no configuration needed)'
-																					: 'Tool functionality'}
+														: tool === 'webpage_scraper'
+															? 'Configure webpage scraping providers and settings'
+															: tool === 'api_caller'
+																? 'Configure external API endpoints'
+																: tool === 'faq'
+																	? 'Manage frequently asked questions'
+																	: tool === 'rag_search'
+																		? 'Configure document search and indexing'
+																		: tool === 'calculator'
+																			? 'Mathematical calculation tool (no configuration needed)'
+																			: tool === 'llm_prompt'
+																				? 'LLM text generation tool (no configuration needed)'
+																				: tool === 'current_time'
+																					? 'Date and time tool (no configuration needed)'
+																					: tool === 'json_processor'
+																						? 'JSON processing tool (no configuration needed)'
+																						: 'Tool functionality'}
 												</p>
 											</div>
 										</div>
@@ -1123,6 +1161,13 @@
 											<button
 												on:click={() => (showWebSearchConfigModal = true)}
 												class="rounded-lg bg-blue-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-blue-700"
+											>
+												Configure
+											</button>
+										{:else if tool === 'webpage_scraper'}
+											<button
+												on:click={() => (showWebpageScraperConfigModal = true)}
+												class="rounded-lg bg-purple-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-purple-700"
 											>
 												Configure
 											</button>
@@ -1156,7 +1201,7 @@
 
 									<!-- Tool Status -->
 									<div class="flex items-center space-x-2 text-sm">
-										{#if tool === 'web_search' || tool === 'api_caller' || tool === 'faq' || tool === 'rag_search'}
+										{#if tool === 'web_search' || tool === 'webpage_scraper' || tool === 'api_caller' || tool === 'faq' || tool === 'rag_search'}
 											<div class="flex items-center space-x-1">
 												<div class="h-2 w-2 rounded-full bg-yellow-500"></div>
 												<span class="text-gray-600 dark:text-gray-400">Configuration required</span>
@@ -1853,6 +1898,15 @@
 	<!-- Web Search Configuration Modal -->
 	{#if showWebSearchConfigModal}
 		<ConfigureWebSearchModal {data} {agent} on:close={() => (showWebSearchConfigModal = false)} />
+	{/if}
+
+	<!-- Webpage Scraper Configuration Modal -->
+	{#if showWebpageScraperConfigModal}
+		<ConfigureWebpageScraperModal
+			{data}
+			{agent}
+			on:close={() => (showWebpageScraperConfigModal = false)}
+		/>
 	{/if}
 
 	<!-- View Conversation Modal -->
