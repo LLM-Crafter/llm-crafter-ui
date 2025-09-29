@@ -708,7 +708,9 @@ class ApiClient {
 		const searchParams = new URLSearchParams();
 		if (since) searchParams.set('since', since);
 
-		const response = await this.fetch(`/conversations/${conversationId}/messages/latest?${searchParams}`);
+		const response = await this.fetch(
+			`/conversations/${conversationId}/messages/latest?${searchParams}`
+		);
 		if (!response.ok) throw new Error('Failed to fetch latest messages');
 		return response.json();
 	}
@@ -772,6 +774,32 @@ class ApiClient {
 			}
 		);
 		if (!response.ok) throw new Error('Failed to configure API endpoints');
+		return response.json();
+	}
+
+	// Web Search Configuration Methods
+	async getAgentWebSearchConfig(orgId: string, projectId: string, agentId: string) {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/agents/${agentId}/web-search-config`
+		);
+		if (!response.ok) throw new Error('Failed to fetch web search configuration');
+		return response.json();
+	}
+
+	async configureAgentWebSearch(
+		orgId: string,
+		projectId: string,
+		agentId: string,
+		configData: any
+	) {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/agents/${agentId}/web-search-config`,
+			{
+				method: 'POST',
+				body: JSON.stringify(configData)
+			}
+		);
+		if (!response.ok) throw new Error('Failed to configure web search');
 		return response.json();
 	}
 
