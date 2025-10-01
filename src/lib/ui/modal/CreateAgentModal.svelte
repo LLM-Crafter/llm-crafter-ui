@@ -47,6 +47,11 @@
 
 	const availableTools = [
 		{ id: 'web_search', name: 'Web Search', description: 'Search the internet for information' },
+		{
+			id: 'webpage_scraper',
+			name: 'Webpage Scraper',
+			description: 'Extract and process content from web pages'
+		},
 		{ id: 'calculator', name: 'Calculator', description: 'Perform mathematical calculations' },
 		{ id: 'llm_prompt', name: 'LLM Prompt', description: 'Execute additional LLM prompts' },
 		{ id: 'current_time', name: 'Current Time', description: 'Get current date and time' },
@@ -74,7 +79,7 @@
 	];
 
 	// Filter tools based on agent type
-	$: filteredTools = availableTools.filter(tool => {
+	$: filteredTools = availableTools.filter((tool) => {
 		// Human handoff is only available for chatbot agents
 		if (tool.id === 'request_human_handoff') {
 			return type === 'chatbot';
@@ -106,6 +111,8 @@
 		switch (toolId) {
 			case 'web_search':
 				return 'fas fa-search';
+			case 'webpage_scraper':
+				return 'fas fa-window-restore';
 			case 'calculator':
 				return 'fas fa-calculator';
 			case 'llm_prompt':
@@ -131,6 +138,8 @@
 		switch (toolId) {
 			case 'web_search':
 				return 'from-blue-500 to-cyan-500';
+			case 'webpage_scraper':
+				return 'from-purple-600 to-violet-600';
 			case 'calculator':
 				return 'from-green-500 to-emerald-500';
 			case 'llm_prompt':
