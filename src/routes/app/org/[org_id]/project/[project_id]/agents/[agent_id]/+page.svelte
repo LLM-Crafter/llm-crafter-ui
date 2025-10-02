@@ -10,6 +10,7 @@
 	import ConfigureRagModal from '$lib/ui/modal/ConfigureRagModal.svelte';
 	import ConfigureWebSearchModal from '$lib/ui/modal/ConfigureWebSearchModal.svelte';
 	import ConfigureWebpageScraperModal from '$lib/ui/modal/ConfigureWebpageScraperModal.svelte';
+	import ConfigureChannelsModal from '$lib/ui/modal/ConfigureChannelsModal.svelte';
 	import ViewConversationModal from '$lib/ui/modal/ViewConversationModal.svelte';
 	import type { AgentStatistics } from '$lib/api';
 
@@ -28,11 +29,13 @@
 	let showRagConfigModal = false;
 	let showWebSearchConfigModal = false;
 	let showWebpageScraperConfigModal = false;
+	let showChannelsConfigModal = false;
 	let showViewConversationModal = false;
 	let selectedConversationId = null;
 	let selectedStatsPeriod: '1d' | '1w' | '1m' = '1d';
 	let activeTab = 'overview'; // 'overview', 'configuration', 'activity', 'statistics'
 	let showFullPrompt = false;
+	let enabledChannels: string[] = [];
 
 	const statsPeriods = [
 		{ value: '1d', label: '24 Hours' },
@@ -43,6 +46,9 @@
 	onMount(async () => {
 		await loadAgentData();
 		await loadStatistics();
+		if (agent?.type === 'chatbot') {
+			await loadEnabledChannels();
+		}
 	});
 
 	async function loadAgentData() {
@@ -80,6 +86,23 @@
 			console.error('Failed to load agent data:', error);
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function loadEnabledChannels() {
+		if (agent?.type !== 'chatbot') return;
+
+		try {
+			const response = await api.getEnabledChannels(
+				data.organization_id,
+				data.project._id,
+				data.agent_id
+			);
+			// API now returns: { agent_id, enabled_channels: [...] }
+			enabledChannels = response.enabled_channels || [];
+		} catch (error) {
+			console.error('Failed to load enabled channels:', error);
+			enabledChannels = [];
 		}
 	}
 
@@ -813,6 +836,74 @@
 							</div>
 						</div>
 					{/if}
+
+					<!-- Channels Preview (for chatbots) -->
+					{#if agent.type === 'chatbot'}
+						<div
+							class="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900"
+						>
+							<div class="mb-4 flex items-center justify-between">
+								<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+									<i class="fas fa-broadcast-tower mr-2 text-teal-600"></i>Channels
+								</h3>
+								<button
+									on:click={() => (showChannelsConfigModal = true)}
+									class="text-sm text-teal-600 hover:text-teal-700 dark:text-teal-400"
+								>
+									Configure →
+								</button>
+							</div>
+							{#if enabledChannels.length > 0}
+								<div class="space-y-2">
+									{#each enabledChannels as channel}
+										<div
+											class="flex items-center justify-between rounded-lg bg-gray-50 p-2 dark:bg-gray-800"
+										>
+											<div class="flex items-center space-x-2">
+												{#if channel === 'whatsapp'}
+													<i class="fab fa-whatsapp text-green-600"></i>
+													<span class="text-sm font-medium text-gray-900 dark:text-gray-100"
+														>WhatsApp</span
+													>
+												{:else if channel === 'telegram'}
+													<i class="fab fa-telegram text-blue-600"></i>
+													<span class="text-sm font-medium text-gray-900 dark:text-gray-100"
+														>Telegram</span
+													>
+												{:else if channel === 'email'}
+													<i class="fas fa-envelope text-purple-600"></i>
+													<span class="text-sm font-medium text-gray-900 dark:text-gray-100"
+														>Email</span
+													>
+												{:else if channel === 'website'}
+													<i class="fas fa-globe text-indigo-600"></i>
+													<span class="text-sm font-medium text-gray-900 dark:text-gray-100"
+														>Website</span
+													>
+												{/if}
+											</div>
+											<span
+												class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400"
+											>
+												<i class="fas fa-check-circle mr-1"></i>Active
+											</span>
+										</div>
+									{/each}
+								</div>
+							{:else}
+								<div class="rounded-lg bg-gray-50 p-4 text-center dark:bg-gray-800">
+									<i class="fas fa-plug mb-2 text-2xl text-gray-400"></i>
+									<p class="text-sm text-gray-600 dark:text-gray-400">No channels configured</p>
+									<button
+										on:click={() => (showChannelsConfigModal = true)}
+										class="mt-2 text-sm font-medium text-teal-600 hover:text-teal-700 dark:text-teal-400"
+									>
+										Configure channels
+									</button>
+								</div>
+							{/if}
+						</div>
+					{/if}
 				</div>
 			</div>
 		{/if}
@@ -1054,6 +1145,16 @@
 								<i class="fas fa-edit"></i>
 								<span>Edit Configuration</span>
 							</button>
+
+							{#if agent.type === 'chatbot'}
+								<button
+									on:click={() => (showChannelsConfigModal = true)}
+									class="flex w-full items-center justify-center space-x-2 rounded-lg border border-teal-300 bg-teal-600 px-4 py-2.5 text-white transition-colors hover:bg-teal-700"
+								>
+									<i class="fas fa-broadcast-tower"></i>
+									<span>Configure Channels</span>
+								</button>
+							{/if}
 
 							{#if agent.tools && agent.tools.map((tool) => tool.name).includes('api_caller')}
 								<button
@@ -1906,6 +2007,20 @@
 			{data}
 			{agent}
 			on:close={() => (showWebpageScraperConfigModal = false)}
+		/>
+	{/if}
+
+	<!-- Channels Configuration Modal -->
+	{#if showChannelsConfigModal}
+		<ConfigureChannelsModal
+			{data}
+			{agent}
+			on:close={() => (showChannelsConfigModal = false)}
+			on:saved={() => {
+				showChannelsConfigModal = false;
+				loadAgentData();
+				loadEnabledChannels();
+			}}
 		/>
 	{/if}
 
