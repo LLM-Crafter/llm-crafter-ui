@@ -262,6 +262,10 @@ class ApiClient {
 		return API_URL;
 	}
 
+	getBaseUrl(): string {
+		return API_URL;
+	}
+
 	async fetch(endpoint: string, options: RequestInit = {}) {
 		const authToken = get(token);
 
@@ -1151,6 +1155,96 @@ class ApiClient {
 		);
 
 		if (!response.ok) throw new Error('Failed to fetch vector database configuration stats');
+		return response.json();
+	}
+
+	// Channel Configuration Methods
+	async getChannelConfig(orgId: string, projectId: string, agentId: string): Promise<any> {
+		const response = await this.fetch(
+			`/channels/organizations/${orgId}/projects/${projectId}/agents/${agentId}/channels`
+		);
+
+		if (!response.ok) {
+			if (response.status === 404) {
+				return { success: true, data: null }; // No configuration yet
+			}
+			throw new Error('Failed to fetch channel configuration');
+		}
+		return response.json();
+	}
+
+	async updateChannelConfig(
+		orgId: string,
+		projectId: string,
+		agentId: string,
+		configData: any
+	): Promise<any> {
+		const response = await this.fetch(
+			`/channels/organizations/${orgId}/projects/${projectId}/agents/${agentId}/channels`,
+			{
+				method: 'PUT',
+				body: JSON.stringify(configData)
+			}
+		);
+
+		if (!response.ok) throw new Error('Failed to update channel configuration');
+		return response.json();
+	}
+
+	async getEnabledChannels(orgId: string, projectId: string, agentId: string): Promise<any> {
+		const response = await this.fetch(
+			`/channels/organizations/${orgId}/projects/${projectId}/agents/${agentId}/channels/enabled`
+		);
+
+		if (!response.ok) throw new Error('Failed to fetch enabled channels');
+		return response.json();
+	}
+
+	async testChannelConnection(
+		orgId: string,
+		projectId: string,
+		agentId: string,
+		channel: string,
+		testRecipient?: string
+	): Promise<any> {
+		const body = testRecipient ? { test_recipient: testRecipient } : {};
+		const response = await this.fetch(
+			`/channels/organizations/${orgId}/projects/${projectId}/agents/${agentId}/channels/${channel}/test`,
+			{
+				method: 'POST',
+				body: JSON.stringify(body)
+			}
+		);
+
+		if (!response.ok) throw new Error('Connection test failed');
+		return response.json();
+	}
+
+	async setupTelegramWebhook(
+		orgId: string,
+		projectId: string,
+		agentId: string,
+		webhookUrl?: string
+	): Promise<any> {
+		const body = webhookUrl ? { webhook_url: webhookUrl } : {};
+		const response = await this.fetch(
+			`/channels/organizations/${orgId}/projects/${projectId}/agents/${agentId}/channels/telegram/webhook/setup`,
+			{
+				method: 'POST',
+				body: JSON.stringify(body)
+			}
+		);
+
+		if (!response.ok) throw new Error('Failed to setup Telegram webhook');
+		return response.json();
+	}
+
+	async getTelegramWebhookInfo(orgId: string, projectId: string, agentId: string): Promise<any> {
+		const response = await this.fetch(
+			`/channels/organizations/${orgId}/projects/${projectId}/agents/${agentId}/channels/telegram/webhook/info`
+		);
+
+		if (!response.ok) throw new Error('Failed to get Telegram webhook info');
 		return response.json();
 	}
 }
