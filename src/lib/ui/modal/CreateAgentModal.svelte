@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import { api } from '$lib/api';
+	import GoogleCalendarConfigModal from './GoogleCalendarConfigModal.svelte';
 
 	export let data;
 	const dispatch = createEventDispatcher();
@@ -8,6 +9,10 @@
 	let step = 1;
 	let loading = false;
 	let error = '';
+
+	// Google Calendar config modal state
+	let showGoogleCalendarConfig = false;
+	let createdAgentId = null; // To store the agent ID after creation for configuration
 
 	// Agent basic info
 	let name = '';
@@ -75,6 +80,11 @@
 			id: 'request_human_handoff',
 			name: 'Human Handoff',
 			description: 'Request human operator intervention for complex issues or frustrated users'
+		},
+		{
+			id: 'google_calendar',
+			name: 'Google Calendar',
+			description: 'Manage Google Calendar events - create, read, update, and delete appointments'
 		}
 	];
 
@@ -129,6 +139,8 @@
 				return 'fas fa-database';
 			case 'request_human_handoff':
 				return 'fas fa-hand-paper';
+			case 'google_calendar':
+				return 'fab fa-google';
 			default:
 				return 'fas fa-tools';
 		}
@@ -156,6 +168,8 @@
 				return 'from-orange-500 to-red-500';
 			case 'request_human_handoff':
 				return 'from-indigo-500 to-blue-500';
+			case 'google_calendar':
+				return 'from-red-600 to-yellow-500';
 			default:
 				return 'from-indigo-500 to-purple-600';
 		}
@@ -243,7 +257,14 @@
 			}
 
 			const agent = await res.json();
-			dispatch('created', agent);
+
+			// If Google Calendar tool is selected, show config modal
+			if (selectedTools.includes('google_calendar')) {
+				createdAgentId = agent._id;
+				showGoogleCalendarConfig = true;
+			} else {
+				dispatch('created', agent);
+			}
 		} catch (err) {
 			error = err.message || 'Something went wrong';
 		} finally {
@@ -571,6 +592,28 @@
 						</div>
 					{/if}
 
+					<!-- Google Calendar Configuration Warning -->
+					{#if selectedTools.includes('google_calendar')}
+						<div class="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-4">
+							<div class="flex items-start space-x-3">
+								<div
+									class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-red-600 to-yellow-500"
+								>
+									<i class="fab fa-google text-sm text-white"></i>
+								</div>
+								<div>
+									<h4 class="font-medium text-yellow-400">
+										Google Calendar Configuration Required
+									</h4>
+									<p class="text-sm text-yellow-300">
+										After creating the agent, you'll need to configure OAuth tokens and calendar
+										settings to enable this tool.
+									</p>
+								</div>
+							</div>
+						</div>
+					{/if}
+
 					<!-- Streaming Configuration -->
 					<div class="space-y-4">
 						<div>
@@ -840,3 +883,23 @@
 		</div>
 	</div>
 </div>
+
+<!-- Google Calendar Config Modal (shown after agent creation if google_calendar tool is selected) -->
+{#if showGoogleCalendarConfig && createdAgentId}
+	<GoogleCalendarConfigModal
+		{data}
+		agent={{ _id: createdAgentId, name: name }}
+		on:close={() => {
+			showGoogleCalendarConfig = false;
+			dispatch('created');
+		}}
+		on:configured={() => {
+			showGoogleCalendarConfig = false;
+			dispatch('created');
+		}}
+		on:deleted={() => {
+			showGoogleCalendarConfig = false;
+			dispatch('created');
+		}}
+	/>
+{/if}

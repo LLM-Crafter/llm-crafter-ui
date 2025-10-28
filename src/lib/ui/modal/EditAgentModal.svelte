@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import { api } from '$lib/api';
+	import GoogleCalendarConfigModal from './GoogleCalendarConfigModal.svelte';
 
 	export let data;
 	export let agent;
@@ -8,6 +9,9 @@
 
 	let loading = false;
 	let error = '';
+
+	// Google Calendar config modal state
+	let showGoogleCalendarConfig = false;
 
 	// Initialize values from existing agent
 	let name = agent.name || '';
@@ -74,6 +78,11 @@
 			id: 'request_human_handoff',
 			name: 'Human Handoff',
 			description: 'Request human operator intervention for complex issues or frustrated users'
+		},
+		{
+			id: 'google_calendar',
+			name: 'Google Calendar',
+			description: 'Manage Google Calendar events - create, read, update, and delete appointments'
 		}
 	];
 
@@ -116,6 +125,8 @@
 				return 'fas fa-database';
 			case 'request_human_handoff':
 				return 'fas fa-hand-paper';
+			case 'google_calendar':
+				return 'fab fa-google';
 			default:
 				return 'fas fa-tools';
 		}
@@ -143,6 +154,8 @@
 				return 'from-orange-500 to-red-500';
 			case 'request_human_handoff':
 				return 'from-indigo-500 to-blue-500';
+			case 'google_calendar':
+				return 'from-red-600 to-yellow-500';
 			default:
 				return 'from-indigo-500 to-purple-600';
 		}
@@ -491,6 +504,38 @@
 						</div>
 					</div>
 				{/if}
+
+				<!-- Google Calendar Configuration -->
+				{#if selectedTools.includes('google_calendar')}
+					<div class="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-4">
+						<div class="flex items-start justify-between">
+							<div class="flex items-start space-x-3">
+								<div
+									class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-red-600 to-yellow-500"
+								>
+									<i class="fab fa-google text-sm text-white"></i>
+								</div>
+								<div>
+									<h4 class="font-medium text-yellow-400">
+										Google Calendar Configuration Required
+									</h4>
+									<p class="text-sm text-yellow-300">
+										Configure OAuth tokens and calendar settings to enable this tool
+									</p>
+								</div>
+							</div>
+							<button
+								type="button"
+								on:click={() => (showGoogleCalendarConfig = true)}
+								disabled={loading}
+								class="rounded-lg bg-gradient-to-r from-red-600 to-yellow-500 px-4 py-2 text-sm font-medium text-white transition-all hover:from-red-700 hover:to-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+							>
+								<i class="fas fa-cog mr-2"></i>
+								Configure
+							</button>
+						</div>
+					</div>
+				{/if}
 			</div>
 
 			<!-- Streaming Configuration -->
@@ -775,3 +820,18 @@
 		</div>
 	</div>
 </div>
+
+<!-- Google Calendar Config Modal -->
+{#if showGoogleCalendarConfig}
+	<GoogleCalendarConfigModal
+		{data}
+		{agent}
+		on:close={() => (showGoogleCalendarConfig = false)}
+		on:configured={() => {
+			showGoogleCalendarConfig = false;
+		}}
+		on:deleted={() => {
+			showGoogleCalendarConfig = false;
+		}}
+	/>
+{/if}
