@@ -37,6 +37,12 @@
 	let streamingEnabled =
 		agent.config?.enable_streaming !== undefined ? agent.config.enable_streaming : true;
 
+	// Initialize language detection configuration
+	let enforceLanguageDetection =
+		agent.config?.enforce_language_detection !== undefined
+			? agent.config.enforce_language_detection
+			: false;
+
 	// Derived provider for suggestions API key
 	$: suggestionsProvider = suggestionsApiKeyId
 		? (data.project as any).apiKeys?.find((api_key: any) => api_key._id === suggestionsApiKeyId)
@@ -211,7 +217,10 @@
 				tools: selectedTools,
 				is_active: isActive,
 				config: {
-					enable_streaming: streamingEnabled
+					enable_streaming: streamingEnabled,
+					...(agent.type === 'chatbot'
+						? { enforce_language_detection: enforceLanguageDetection }
+						: {})
 				},
 				question_suggestions: {
 					enabled: suggestionsEnabled,
@@ -568,6 +577,39 @@
 					</label>
 				</div>
 			</div>
+
+			{#if agent.type === 'chatbot'}
+				<!-- Language Detection Configuration -->
+				<div class="space-y-6">
+					<div class="flex items-center space-x-2">
+						<i class="fas fa-language text-green-400"></i>
+						<h3 class="text-lg font-semibold text-gray-100">Language Detection</h3>
+					</div>
+
+					<!-- Enable/Disable Toggle -->
+					<div
+						class="flex items-center justify-between rounded-lg border border-gray-700 bg-gray-800 p-4"
+					>
+						<div>
+							<h4 class="font-medium text-gray-100">Enforce Language Detection</h4>
+							<p class="text-sm text-gray-400">
+								Force the agent to detect and respond in the user's language
+							</p>
+						</div>
+						<label class="relative inline-flex cursor-pointer items-center">
+							<input
+								type="checkbox"
+								bind:checked={enforceLanguageDetection}
+								disabled={loading}
+								class="peer sr-only"
+							/>
+							<div
+								class="peer h-6 w-11 rounded-full bg-gray-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-indigo-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300"
+							></div>
+						</label>
+					</div>
+				</div>
+			{/if}
 
 			<!-- Question Suggestions Configuration -->
 			<div class="space-y-6">

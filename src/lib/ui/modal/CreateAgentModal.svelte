@@ -39,6 +39,9 @@
 	// Streaming
 	let streamingEnabled = true;
 
+	// Language Detection
+	let enforceLanguageDetection = false;
+
 	// Derived provider based on selected API key
 	$: provider = apiKeyId
 		? (data.project as any).apiKeys?.find((api_key: any) => api_key._id === apiKeyId)?.provider
@@ -227,7 +230,8 @@
 				tools: selectedTools,
 				is_active: true,
 				config: {
-					enable_streaming: streamingEnabled
+					enable_streaming: streamingEnabled,
+					...(type === 'chatbot' ? { enforce_language_detection: enforceLanguageDetection } : {})
 				},
 				question_suggestions: {
 					enabled: suggestionsEnabled,
@@ -646,6 +650,40 @@
 						</div>
 					</div>
 				</div>
+
+				{#if type === 'chatbot'}
+					<!-- Language Detection Configuration -->
+					<div class="space-y-4">
+						<div>
+							<h4 class="text-lg font-semibold text-gray-100">Language Detection</h4>
+							<p class="text-sm text-gray-400">
+								Configure automatic language detection for chat interactions
+							</p>
+						</div>
+
+						<div
+							class="flex items-center justify-between rounded-lg border border-gray-700 bg-gray-800 p-4"
+						>
+							<div>
+								<h5 class="font-medium text-gray-100">Enforce Language Detection</h5>
+								<p class="text-sm text-gray-400">
+									Force the agent to detect and respond in the user's language
+								</p>
+							</div>
+							<label class="relative inline-flex cursor-pointer items-center">
+								<input
+									type="checkbox"
+									bind:checked={enforceLanguageDetection}
+									disabled={loading}
+									class="peer sr-only"
+								/>
+								<div
+									class="peer h-6 w-11 rounded-full bg-gray-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-indigo-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300"
+								></div>
+							</label>
+						</div>
+					</div>
+				{/if}
 			{:else if step === 4}
 				<!-- Step 4: Question Suggestions Configuration -->
 				<div class="space-y-6">
