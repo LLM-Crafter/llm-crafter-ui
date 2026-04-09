@@ -43,6 +43,11 @@
 			? agent.config.enforce_language_detection
 			: false;
 
+	// Initialize GDPR settings
+	let gdprEncryptMessages: boolean =
+		agent.gdpr?.encrypt_messages !== undefined ? agent.gdpr.encrypt_messages : true;
+	let gdprRetentionDays: number | null = agent.gdpr?.retention_days ?? null;
+
 	// Derived provider for suggestions API key
 	$: suggestionsProvider = suggestionsApiKeyId
 		? (data.project as any).apiKeys?.find((api_key: any) => api_key._id === suggestionsApiKeyId)
@@ -229,6 +234,10 @@
 					model: suggestionsEnabled ? suggestionsModel : null,
 					custom_prompt:
 						suggestionsEnabled && suggestionsCustomPrompt.trim() ? suggestionsCustomPrompt : null
+				},
+				gdpr: {
+					encrypt_messages: gdprEncryptMessages,
+					retention_days: gdprRetentionDays
 				}
 			};
 
@@ -767,6 +776,57 @@
 						</div>
 					</div>
 				{/if}
+			</div>
+
+			<!-- GDPR Configuration -->
+			<div class="space-y-6">
+				<div class="flex items-center space-x-2">
+					<i class="fas fa-shield-alt text-green-400"></i>
+					<h3 class="text-lg font-semibold text-gray-100">GDPR & Data Privacy</h3>
+				</div>
+
+				<div
+					class="flex items-center justify-between rounded-lg border border-gray-700 bg-gray-800 p-4"
+				>
+					<div>
+						<h4 class="font-medium text-gray-100">Encrypt Messages</h4>
+						<p class="text-sm text-gray-400">
+							Encrypt stored conversation messages for enhanced data security
+						</p>
+					</div>
+					<label class="relative inline-flex cursor-pointer items-center">
+						<input
+							type="checkbox"
+							bind:checked={gdprEncryptMessages}
+							disabled={loading}
+							class="peer sr-only"
+						/>
+						<div
+							class="peer h-6 w-11 rounded-full bg-gray-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-green-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300"
+						></div>
+					</label>
+				</div>
+
+				<div class="rounded-lg border border-gray-700 bg-gray-800 p-4">
+					<label
+						class="mb-2 block text-sm font-medium text-gray-300"
+						for="edit-gdpr-retention-days"
+					>
+						Data Retention (days)
+					</label>
+					<input
+						id="edit-gdpr-retention-days"
+						type="number"
+						min="1"
+						placeholder="No limit"
+						bind:value={gdprRetentionDays}
+						disabled={loading}
+						class="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-gray-100 placeholder-gray-500 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+					/>
+					<p class="mt-1 text-xs text-gray-500">
+						Number of days to retain conversation data. Leave empty for no automatic deletion.
+					</p>
+				</div>
 			</div>
 
 			<!-- Agent Statistics (if available) -->
