@@ -46,6 +46,12 @@
 	let gdprEncryptMessages = true;
 	let gdprRetentionDays: number | null = null;
 
+	// Agent Version (V1 = classic, V2 = small agent graph — chatbot only)
+	let enableSmallAgentGraph = false;
+	let plannerModel: string | null = null;
+	let responderModel: string | null = null;
+	let criticModel: string | null = null;
+
 	// Derived provider based on selected API key
 	$: provider = apiKeyId
 		? (data.project as any).apiKeys?.find((api_key: any) => api_key._id === apiKeyId)?.provider
@@ -235,7 +241,21 @@
 				is_active: true,
 				config: {
 					enable_streaming: streamingEnabled,
-					...(type === 'chatbot' ? { enforce_language_detection: enforceLanguageDetection } : {})
+					...(type === 'chatbot' ? { enforce_language_detection: enforceLanguageDetection } : {}),
+					...(type === 'chatbot'
+						? {
+								enable_small_agent_graph: enableSmallAgentGraph,
+								...(enableSmallAgentGraph
+									? {
+											graph_models: {
+												planner_model: plannerModel || null,
+												responder_model: responderModel || null,
+												critic_model: criticModel || null
+											}
+										}
+									: {})
+							}
+						: {})
 				},
 				question_suggestions: {
 					enabled: suggestionsEnabled,
@@ -305,9 +325,13 @@
 </script>
 
 <!-- BACKDROP -->
-<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+<div
+	class="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black/50 backdrop-blur-sm"
+>
 	<!-- MODAL -->
-	<div class="mx-4 w-full max-w-4xl rounded-xl border border-gray-800 bg-gray-900 shadow-2xl">
+	<div
+		class="mx-4 flex max-h-[90vh] w-full max-w-4xl flex-col rounded-xl border border-gray-800 bg-gray-900 shadow-2xl"
+	>
 		<!-- Header -->
 		<div class="border-b border-gray-800 p-6">
 			<div class="flex items-center justify-between">
@@ -359,7 +383,7 @@
 		</div>
 
 		<!-- Content -->
-		<div class="p-6">
+		<div class="flex-1 overflow-y-auto p-6">
 			{#if step === 1}
 				<!-- Step 1: Basic Information -->
 				<div class="space-y-6">
@@ -543,6 +567,170 @@
 							/>
 						</div>
 					</div>
+
+					{#if type === 'chatbot'}
+						<!-- Agent Version Selector -->
+						<div class="space-y-4">
+							<div>
+								<h4 class="text-sm font-medium text-gray-300">Agent Version</h4>
+								<p class="mt-0.5 text-xs text-gray-500">
+									Choose how the agent processes conversations
+								</p>
+							</div>
+
+							<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+								<!-- V1 -->
+								<button
+									type="button"
+									on:click={() => (enableSmallAgentGraph = false)}
+									class="relative rounded-lg border-2 p-4 text-left transition-all {!enableSmallAgentGraph
+										? 'border-indigo-500 bg-indigo-500/10'
+										: 'border-gray-700 hover:border-gray-600'}"
+								>
+									<div class="flex items-start space-x-3">
+										<div
+											class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500"
+										>
+											<i class="fas fa-robot text-white"></i>
+										</div>
+										<div>
+											<h5 class="font-medium text-gray-100">
+												V1 <span class="ml-1 text-xs font-normal text-gray-400">Classic</span>
+											</h5>
+											<p class="text-sm text-gray-400">
+												Single-model agent. Fast and straightforward for most use cases.
+											</p>
+										</div>
+									</div>
+									{#if !enableSmallAgentGraph}
+										<div class="absolute right-3 top-3">
+											<i class="fas fa-check-circle text-indigo-500"></i>
+										</div>
+									{/if}
+								</button>
+
+								<!-- V2 -->
+								<button
+									type="button"
+									on:click={() => (enableSmallAgentGraph = true)}
+									class="relative rounded-lg border-2 p-4 text-left transition-all {enableSmallAgentGraph
+										? 'border-violet-500 bg-violet-500/10'
+										: 'border-gray-700 hover:border-gray-600'}"
+								>
+									<div class="flex items-start space-x-3">
+										<div
+											class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-r from-violet-500 to-purple-600"
+										>
+											<i class="fas fa-project-diagram text-white"></i>
+										</div>
+										<div>
+											<h5 class="font-medium text-gray-100">
+												V2 <span class="ml-1 text-xs font-normal text-violet-400"
+													>Small Agent Graph</span
+												>
+											</h5>
+											<p class="text-sm text-gray-400">
+												Multi-model pipeline with planner, responder, and critic roles for richer
+												responses.
+											</p>
+										</div>
+									</div>
+									{#if enableSmallAgentGraph}
+										<div class="absolute right-3 top-3">
+											<i class="fas fa-check-circle text-violet-500"></i>
+										</div>
+									{/if}
+								</button>
+							</div>
+
+							{#if enableSmallAgentGraph}
+								<!-- Graph Model Selectors -->
+								<div class="space-y-4 rounded-lg border border-violet-500/30 bg-violet-500/5 p-5">
+									<div class="flex items-center space-x-2">
+										<i class="fas fa-project-diagram text-violet-400"></i>
+										<h5 class="text-sm font-medium text-violet-300">Graph Model Configuration</h5>
+									</div>
+									<p class="text-xs text-gray-400">
+										Each role can use a different model. Leave empty to use the main model above for
+										that role.
+									</p>
+
+									{#if provider}
+										<div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+											<div>
+												<label
+													class="mb-2 block text-xs font-medium text-gray-300"
+													for="planner-model"
+												>
+													<i class="fas fa-sitemap mr-1 text-blue-400"></i> Planner Model
+												</label>
+												<select
+													id="planner-model"
+													bind:value={plannerModel}
+													disabled={loading}
+													class="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+												>
+													<option value={null}>Default (main model)</option>
+													{#each provider.models as modelOption}
+														<option value={modelOption}>{modelOption}</option>
+													{/each}
+												</select>
+												<p class="mt-1 text-xs text-gray-500">Breaks down the task</p>
+											</div>
+
+											<div>
+												<label
+													class="mb-2 block text-xs font-medium text-gray-300"
+													for="responder-model"
+												>
+													<i class="fas fa-comments mr-1 text-green-400"></i> Responder Model
+												</label>
+												<select
+													id="responder-model"
+													bind:value={responderModel}
+													disabled={loading}
+													class="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+												>
+													<option value={null}>Default (main model)</option>
+													{#each provider.models as modelOption}
+														<option value={modelOption}>{modelOption}</option>
+													{/each}
+												</select>
+												<p class="mt-1 text-xs text-gray-500">Generates the response</p>
+											</div>
+
+											<div>
+												<label
+													class="mb-2 block text-xs font-medium text-gray-300"
+													for="critic-model"
+												>
+													<i class="fas fa-check-double mr-1 text-yellow-400"></i> Critic Model
+												</label>
+												<select
+													id="critic-model"
+													bind:value={criticModel}
+													disabled={loading}
+													class="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+												>
+													<option value={null}>Default (main model)</option>
+													{#each provider.models as modelOption}
+														<option value={modelOption}>{modelOption}</option>
+													{/each}
+												</select>
+												<p class="mt-1 text-xs text-gray-500">Reviews and refines</p>
+											</div>
+										</div>
+									{:else}
+										<div
+											class="rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-gray-400"
+										>
+											Select an API key above to configure graph models.
+										</div>
+									{/if}
+								</div>
+							{/if}
+						</div>
+					{/if}
 				</div>
 			{:else if step === 3}
 				<!-- Step 3: Tools Configuration -->
