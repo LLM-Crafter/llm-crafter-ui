@@ -52,6 +52,20 @@
 	let responderModel: string | null = null;
 	let criticModel: string | null = null;
 
+	// Prompt mode (V2 only: 'system_prompt' | 'prompt_sections')
+	let promptMode: 'system_prompt' | 'prompt_sections' = 'system_prompt';
+	let promptSections = {
+		identity_and_tone: '',
+		tools_and_apis: '',
+		conversation_flow: '',
+		output_format: '',
+		guardrails: '',
+		domain_workflows: ''
+	};
+
+	// Reset to system_prompt when switching back to V1
+	$: if (!enableSmallAgentGraph) promptMode = 'system_prompt';
+
 	// Derived provider based on selected API key
 	$: provider = apiKeyId
 		? (data.project as any).apiKeys?.find((api_key: any) => api_key._id === apiKeyId)?.provider
@@ -228,7 +242,7 @@
 				name,
 				description,
 				type,
-				system_prompt: systemPrompt,
+				system_prompt: promptMode === 'system_prompt' ? systemPrompt : '',
 				api_key: apiKeyId,
 				llm_settings: {
 					model,
@@ -309,6 +323,13 @@
 			case 1:
 				return name.trim() !== '' && type !== '';
 			case 2:
+				if (promptMode === 'prompt_sections') {
+					return (
+						model !== '' &&
+						apiKeyId !== '' &&
+						Object.values(promptSections).some((v) => v.trim() !== '')
+					);
+				}
 				return model !== '' && systemPrompt.trim() !== '' && apiKeyId !== '';
 			case 3:
 				return true; // Tools are optional
@@ -514,22 +535,164 @@
 						{/if}
 					</div>
 
-					<div>
-						<label class="mb-2 block text-sm font-medium text-gray-300" for="agent-system-prompt">
-							System Prompt *
-						</label>
-						<textarea
-							id="agent-system-prompt"
-							bind:value={systemPrompt}
-							placeholder="You are a helpful AI assistant. Your role is to..."
-							rows="6"
-							disabled={loading}
-							class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-gray-100 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-						></textarea>
-						<p class="mt-1 text-xs text-gray-500">
-							Define the agent's personality, role, and behavior
-						</p>
-					</div>
+					<!-- Prompt mode toggle: only visible when V2 is active -->
+					{#if enableSmallAgentGraph}
+						<div
+							class="flex items-center space-x-1 rounded-lg border border-gray-700 bg-gray-800/60 p-1"
+						>
+							<button
+								type="button"
+								on:click={() => (promptMode = 'system_prompt')}
+								class="flex flex-1 items-center justify-center space-x-2 rounded-md px-3 py-2 text-sm font-medium transition-all {promptMode ===
+								'system_prompt'
+									? 'bg-gray-700 text-gray-100 shadow'
+									: 'text-gray-400 hover:text-gray-200'}"
+							>
+								<i class="fas fa-align-left"></i>
+								<span>System Prompt</span>
+							</button>
+							<button
+								type="button"
+								on:click={() => (promptMode = 'prompt_sections')}
+								class="flex flex-1 items-center justify-center space-x-2 rounded-md px-3 py-2 text-sm font-medium transition-all {promptMode ===
+								'prompt_sections'
+									? 'bg-violet-600 text-white shadow'
+									: 'text-gray-400 hover:text-gray-200'}"
+							>
+								<i class="fas fa-layer-group"></i>
+								<span
+									>Prompt Sections <span class="ml-1 rounded bg-violet-500/30 px-1.5 py-0.5 text-xs"
+										>V2</span
+									></span
+								>
+							</button>
+						</div>
+					{/if}
+
+					{#if promptMode === 'system_prompt'}
+						<div>
+							<label class="mb-2 block text-sm font-medium text-gray-300" for="agent-system-prompt">
+								System Prompt *
+							</label>
+							<textarea
+								id="agent-system-prompt"
+								bind:value={systemPrompt}
+								placeholder="You are a helpful AI assistant. Your role is to..."
+								rows="6"
+								disabled={loading}
+								class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-gray-100 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+							></textarea>
+							<p class="mt-1 text-xs text-gray-500">
+								Define the agent's personality, role, and behavior
+							</p>
+						</div>
+					{:else}
+						<!-- Prompt Sections (V2 only) -->
+						<div class="space-y-4 rounded-lg border border-violet-500/20 bg-violet-500/5 p-4">
+							<p class="text-xs text-gray-400">
+								<i class="fas fa-info-circle mr-1 text-violet-400"></i>
+								Define each section independently. The V2 engine composes them into the final prompt
+								automatically. All sections are optional.
+							</p>
+							<div>
+								<label
+									class="mb-1.5 flex items-center space-x-2 text-sm font-medium text-gray-300"
+									for="ps-create-identity"
+								>
+									<i class="fas fa-user-circle text-blue-400"></i><span>Identity &amp; Tone</span>
+								</label>
+								<textarea
+									id="ps-create-identity"
+									bind:value={promptSections.identity_and_tone}
+									placeholder="You are a professional assistant. Use a warm but concise tone."
+									rows="2"
+									disabled={loading}
+									class="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+								></textarea>
+							</div>
+							<div>
+								<label
+									class="mb-1.5 flex items-center space-x-2 text-sm font-medium text-gray-300"
+									for="ps-create-tools"
+								>
+									<i class="fas fa-plug text-green-400"></i><span>Tools &amp; APIs</span>
+								</label>
+								<textarea
+									id="ps-create-tools"
+									bind:value={promptSections.tools_and_apis}
+									placeholder="Always use rag_search before answering. Never guess tool IDs."
+									rows="2"
+									disabled={loading}
+									class="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+								></textarea>
+							</div>
+							<div>
+								<label
+									class="mb-1.5 flex items-center space-x-2 text-sm font-medium text-gray-300"
+									for="ps-create-flow"
+								>
+									<i class="fas fa-stream text-violet-400"></i><span>Conversation Flow</span>
+								</label>
+								<textarea
+									id="ps-create-flow"
+									bind:value={promptSections.conversation_flow}
+									placeholder="1. Greet → 2. Qualify → 3. Search → 4. Present → 5. Close"
+									rows="2"
+									disabled={loading}
+									class="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+								></textarea>
+							</div>
+							<div>
+								<label
+									class="mb-1.5 flex items-center space-x-2 text-sm font-medium text-gray-300"
+									for="ps-create-format"
+								>
+									<i class="fas fa-list-ul text-yellow-400"></i><span>Output Format</span>
+								</label>
+								<textarea
+									id="ps-create-format"
+									bind:value={promptSections.output_format}
+									placeholder="Use bullet lists for results. Include price, key details, and location."
+									rows="2"
+									disabled={loading}
+									class="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+								></textarea>
+							</div>
+							<div>
+								<label
+									class="mb-1.5 flex items-center space-x-2 text-sm font-medium text-gray-300"
+									for="ps-create-guardrails"
+								>
+									<i class="fas fa-shield-alt text-red-400"></i><span>Guardrails</span>
+								</label>
+								<textarea
+									id="ps-create-guardrails"
+									bind:value={promptSections.guardrails}
+									placeholder="Never invent details. Say honestly if no results are found."
+									rows="2"
+									disabled={loading}
+									class="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+								></textarea>
+							</div>
+							<div>
+								<label
+									class="mb-1.5 flex items-center space-x-2 text-sm font-medium text-gray-300"
+									for="ps-create-domain"
+								>
+									<i class="fas fa-project-diagram text-orange-400"></i><span>Domain Workflows</span
+									>
+								</label>
+								<textarea
+									id="ps-create-domain"
+									bind:value={promptSections.domain_workflows}
+									placeholder="When filtering: always search first, then present max 5 results with key details."
+									rows="2"
+									disabled={loading}
+									class="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+								></textarea>
+							</div>
+						</div>
+					{/if}
 
 					<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
 						<div>
