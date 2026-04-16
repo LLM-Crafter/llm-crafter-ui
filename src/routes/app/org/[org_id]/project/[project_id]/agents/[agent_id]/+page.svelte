@@ -12,6 +12,7 @@
 	import ConfigureWebpageScraperModal from '$lib/ui/modal/ConfigureWebpageScraperModal.svelte';
 	import ConfigureChannelsModal from '$lib/ui/modal/ConfigureChannelsModal.svelte';
 	import ViewConversationModal from '$lib/ui/modal/ViewConversationModal.svelte';
+	import DeleteConversationsModal from '$lib/ui/modal/DeleteConversationsModal.svelte';
 	import type { AgentStatistics } from '$lib/api';
 
 	export let data;
@@ -31,6 +32,7 @@
 	let showWebpageScraperConfigModal = false;
 	let showChannelsConfigModal = false;
 	let showViewConversationModal = false;
+	let showDeleteConversationsModal = false;
 	let selectedConversationId = null;
 	let selectedStatsPeriod: '1d' | '1w' | '1m' = '1d';
 	let activeTab = 'overview'; // 'overview', 'configuration', 'activity', 'statistics'
@@ -1221,12 +1223,20 @@
 						{agent.type === 'chatbot' ? 'Conversation History' : 'Execution History'}
 					</h2>
 					<div class="flex items-center space-x-3">
-						<!-- Filter and search can be added here -->
 						<span class="text-sm text-gray-500 dark:text-gray-400">
 							{agent.type === 'chatbot'
 								? `${conversations?.total || 0} conversations`
 								: `${executions.length} executions`}
 						</span>
+						{#if agent.type === 'chatbot' && (conversations?.total || 0) > 0}
+							<button
+								on:click={() => (showDeleteConversationsModal = true)}
+								class="inline-flex items-center space-x-1.5 rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+							>
+								<i class="fas fa-trash-alt"></i>
+								<span>Delete All</span>
+							</button>
+						{/if}
 					</div>
 				</div>
 
@@ -1757,6 +1767,19 @@
 		/>
 	{/if}
 
+	<!-- Delete Conversations Modal -->
+	{#if showDeleteConversationsModal}
+		<DeleteConversationsModal
+			{data}
+			{agent}
+			on:close={() => (showDeleteConversationsModal = false)}
+			on:deleted={() => {
+				showDeleteConversationsModal = false;
+				loadAgentData();
+			}}
+		/>
+	{/if}
+
 	<!-- View Conversation Modal -->
 	{#if showViewConversationModal && selectedConversationId && agent}
 		<ViewConversationModal
@@ -1766,6 +1789,19 @@
 			on:close={() => {
 				showViewConversationModal = false;
 				selectedConversationId = null;
+			}}
+		/>
+	{/if}
+
+	<!-- Delete Conversations Modal -->
+	{#if showDeleteConversationsModal}
+		<DeleteConversationsModal
+			{data}
+			{agent}
+			on:close={() => (showDeleteConversationsModal = false)}
+			on:deleted={() => {
+				showDeleteConversationsModal = false;
+				loadAgentData();
 			}}
 		/>
 	{/if}

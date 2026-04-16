@@ -611,6 +611,20 @@ class ApiClient {
 		return response.json();
 	}
 
+	async deleteAgentConversations(orgId: string, projectId: string, agentId: string) {
+		const response = await this.fetch(
+			`/organizations/${orgId}/projects/${projectId}/agents/${agentId}/conversations`,
+			{
+				method: 'DELETE'
+			}
+		);
+		if (!response.ok) {
+			const err = await response.json().catch(() => ({ error: 'Failed to delete conversations' }));
+			throw new Error(err.error || 'Failed to delete conversations');
+		}
+		return response.json();
+	}
+
 	async executeAgent(orgId: string, projectId: string, agentId: string, executionData: any) {
 		const response = await this.fetch(
 			`/organizations/${orgId}/projects/${projectId}/agents/${agentId}/execute`,
