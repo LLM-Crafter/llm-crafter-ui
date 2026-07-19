@@ -11,9 +11,56 @@
 	let result = null;
 	let error = '';
 
+	// File attachments (task agents only)
+	let files: File[] = [];
+	let fileInputEl: HTMLInputElement;
+
 	// Streaming variables
 	let isStreaming = false;
 	let streamingResponse = '';
+
+	$: isTaskAgent = agent?.type === 'task';
+	$: hasFiles = files.length > 0;
+
+	function handleFileSelect(event: Event) {
+		const target = event.target as HTMLInputElement;
+		if (!target.files) return;
+		const newFiles = Array.from(target.files);
+		// Append new selections to existing list
+		files = [...files, ...newFiles];
+		// Reset the input so the same file can be re-added if removed
+		target.value = '';
+	}
+
+	function removeFile(index: number) {
+		files = files.filter((_, i) => i !== index);
+	}
+
+	function formatBytes(bytes: number) {
+		if (!bytes && bytes !== 0) return '';
+		if (bytes < 1024) return `${bytes} B`;
+		if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+	}
+
+	function getFileIcon(file: { name?: string; mime_type?: string }) {
+		const name = (file.name || '').toLowerCase();
+		const mime = (file.mime_type || '').toLowerCase();
+		if (mime.startsWith('image/') || /\.(png|jpe?g|gif|webp|svg|bmp)$/.test(name))
+			return 'fas fa-file-image';
+		if (mime.includes('pdf') || name.endsWith('.pdf')) return 'fas fa-file-pdf';
+		if (mime.includes('presentation') || /\.(pptx?|key)$/.test(name))
+			return 'fas fa-file-powerpoint';
+		if (mime.includes('spreadsheet') || /\.(xlsx?|csv)$/.test(name)) return 'fas fa-file-excel';
+		if (mime.includes('word') || /\.(docx?|rtf)$/.test(name)) return 'fas fa-file-word';
+		if (mime.startsWith('audio/')) return 'fas fa-file-audio';
+		if (mime.startsWith('video/')) return 'fas fa-file-video';
+		if (mime.includes('zip') || /\.(zip|tar|gz|7z|rar)$/.test(name)) return 'fas fa-file-archive';
+		if (mime.includes('json') || mime.includes('xml') || /\.(json|xml|ya?ml)$/.test(name))
+			return 'fas fa-file-code';
+		if (mime.startsWith('text/')) return 'fas fa-file-alt';
+		return 'fas fa-file';
+	}
 
 	function getToolIcon(toolId) {
 		switch (toolId) {
@@ -67,11 +114,48 @@
 		error = '';
 		result = null;
 
+		// When files are attached, we must use multipart (non-streaming) execution
+		if (hasFiles) {
+			await executeAgentWithFiles();
+			return;
+		}
+
 		// Check if streaming is enabled for this agent
 		if (agent.config?.enable_streaming) {
 			await executeAgentStreaming();
 		} else {
 			await executeAgentRegular();
+		}
+	}
+
+	async function executeAgentWithFiles() {
+		loading = true;
+
+		try {
+			const formData = new FormData();
+			formData.append(
+				'input',
+				JSON.stringify({
+					task: input,
+					user_identifier: 'user-123'
+				})
+			);
+			for (const f of files) {
+				formData.append('file', f, f.name);
+			}
+
+			const response = await api.executeAgent(
+				data.organization_id,
+				data.project._id,
+				agent._id,
+				formData
+			);
+
+			result = response;
+		} catch (err) {
+			error = err.message || 'Failed to execute agent';
+		} finally {
+			loading = false;
 		}
 	}
 
@@ -267,6 +351,83 @@
 					</p>
 				</div>
 
+				{#if isTaskAgent}
+					<!-- File Attachments -->
+					<div>
+						<div class="mb-2 flex items-center justify-between">
+							<label class="block text-sm font-medium text-gray-300" for="agent-files">
+								Attachments
+								<span class="ml-1 text-xs font-normal text-gray-500">(optional)</span>
+							</label>
+							{#if hasFiles}
+								<button
+									type="button"
+									on:click={() => (files = [])}
+									disabled={loading || isStreaming}
+									class="text-xs text-gray-400 transition-colors hover:text-red-400 disabled:opacity-50"
+								>
+									Clear all
+								</button>
+							{/if}
+						</div>
+
+						<input
+							id="agent-files"
+							bind:this={fileInputEl}
+							type="file"
+							multiple
+							on:change={handleFileSelect}
+							disabled={loading || isStreaming}
+							class="hidden"
+						/>
+
+						<button
+							type="button"
+							on:click={() => fileInputEl?.click()}
+							disabled={loading || isStreaming}
+							class="flex w-full items-center justify-center space-x-2 rounded-lg border border-dashed border-gray-700 bg-gray-800/50 px-4 py-4 text-sm text-gray-300 transition-colors hover:border-green-500/60 hover:bg-gray-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+						>
+							<i class="fas fa-paperclip"></i>
+							<span>Click to attach files</span>
+						</button>
+
+						{#if hasFiles}
+							<ul class="mt-3 space-y-2">
+								{#each files as file, i (file.name + i)}
+									<li
+										class="flex items-center justify-between rounded-lg border border-gray-700 bg-gray-800 px-3 py-2"
+									>
+										<div class="flex min-w-0 items-center space-x-3">
+											<i class="{getFileIcon(file)} text-green-400"></i>
+											<div class="min-w-0">
+												<p class="truncate text-sm text-gray-100" title={file.name}>
+													{file.name}
+												</p>
+												<p class="text-xs text-gray-500">{formatBytes(file.size)}</p>
+											</div>
+										</div>
+										<button
+											type="button"
+											on:click={() => removeFile(i)}
+											disabled={loading || isStreaming}
+											class="ml-3 rounded p-1 text-gray-400 transition-colors hover:bg-gray-700 hover:text-red-400 disabled:opacity-50"
+											aria-label="Remove file"
+										>
+											<i class="fas fa-times"></i>
+										</button>
+									</li>
+								{/each}
+							</ul>
+							{#if agent.config?.enable_streaming}
+								<p class="mt-2 text-xs text-yellow-400/80">
+									<i class="fas fa-info-circle mr-1"></i>
+									Streaming is disabled when files are attached.
+								</p>
+							{/if}
+						{/if}
+					</div>
+				{/if}
+
 				<div class="flex items-center justify-between">
 					<div class="flex items-center space-x-4 text-sm text-gray-400">
 						{#if agent.llm_settings?.model}
@@ -377,6 +538,61 @@
 						</div>
 					</div>
 
+					<!-- Output Files -->
+					{#if result.output_files && result.output_files.length > 0}
+						<div class="rounded-lg border border-gray-700 bg-gray-800 p-4">
+							<h4 class="mb-3 flex items-center space-x-2 font-medium text-gray-300">
+								<i class="fas fa-folder-open text-amber-400"></i>
+								<span>Output Files</span>
+								<span
+									class="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-400"
+								>
+									{result.output_files.length}
+								</span>
+							</h4>
+							<ul class="space-y-2">
+								{#each result.output_files as outFile}
+									<li
+										class="flex items-center justify-between rounded-lg border border-gray-700 bg-gray-900 px-3 py-2"
+									>
+										<div class="flex min-w-0 items-center space-x-3">
+											<i class="{getFileIcon(outFile)} text-amber-400"></i>
+											<div class="min-w-0">
+												<p class="truncate text-sm text-gray-100" title={outFile.filename}>
+													{outFile.filename}
+												</p>
+												<div class="flex items-center space-x-2 text-xs text-gray-500">
+													{#if outFile.mime_type}
+														<span class="truncate">{outFile.mime_type}</span>
+													{/if}
+													{#if outFile.tool_name}
+														<span class="text-gray-600">•</span>
+														<span class="flex items-center text-indigo-400">
+															<i class="fas fa-tools mr-1 text-[10px]"></i>
+															{outFile.tool_name}
+														</span>
+													{/if}
+												</div>
+											</div>
+										</div>
+										{#if outFile.download_url}
+											<a
+												href={outFile.download_url}
+												target="_blank"
+												rel="noopener noreferrer"
+												download={outFile.filename}
+												class="ml-3 inline-flex items-center space-x-2 rounded-lg bg-amber-500/10 px-3 py-1.5 text-sm font-medium text-amber-400 transition-colors hover:bg-amber-500/20"
+											>
+												<i class="fas fa-download"></i>
+												<span>Download</span>
+											</a>
+										{/if}
+									</li>
+								{/each}
+							</ul>
+						</div>
+					{/if}
+
 					<!-- Thinking Process -->
 					{#if result.thinking}
 						<details class="rounded-lg border border-gray-700 bg-gray-800">
@@ -421,6 +637,7 @@
 								result = null;
 								input = '';
 								error = '';
+								files = [];
 							}}
 							class="inline-flex items-center space-x-2 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-gray-300 transition-colors hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
 						>

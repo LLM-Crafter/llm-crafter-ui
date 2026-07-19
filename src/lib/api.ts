@@ -269,10 +269,14 @@ class ApiClient {
 	async fetch(endpoint: string, options: RequestInit = {}) {
 		const authToken = get(token);
 
+		// When sending FormData, let the browser set the multipart boundary
+		const isFormData =
+			typeof FormData !== 'undefined' && options.body instanceof FormData;
+
 		const response = await fetch(`${API_URL}${endpoint}`, {
 			...options,
 			headers: {
-				'Content-Type': 'application/json',
+				...(isFormData ? {} : { 'Content-Type': 'application/json' }),
 				...(authToken && { Authorization: `Bearer ${authToken}` }),
 				...options.headers
 			}
@@ -626,11 +630,13 @@ class ApiClient {
 	}
 
 	async executeAgent(orgId: string, projectId: string, agentId: string, executionData: any) {
+		const isFormData =
+			typeof FormData !== 'undefined' && executionData instanceof FormData;
 		const response = await this.fetch(
 			`/organizations/${orgId}/projects/${projectId}/agents/${agentId}/execute`,
 			{
 				method: 'POST',
-				body: JSON.stringify(executionData)
+				body: isFormData ? executionData : JSON.stringify(executionData)
 			}
 		);
 		if (!response.ok) throw new Error('Failed to execute agent');

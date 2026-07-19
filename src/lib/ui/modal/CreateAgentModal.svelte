@@ -2,6 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import { api } from '$lib/api';
 	import GoogleCalendarConfigModal from './GoogleCalendarConfigModal.svelte';
+	import VoiceConfigModal from './VoiceConfigModal.svelte';
 
 	export let data;
 	const dispatch = createEventDispatcher();
@@ -13,6 +14,9 @@
 	// Google Calendar config modal state
 	let showGoogleCalendarConfig = false;
 	let createdAgentId = null; // To store the agent ID after creation for configuration
+
+	// Voice config modal state
+	let showVoiceConfig = false;
 
 	// Agent basic info
 	let name = '';
@@ -41,6 +45,9 @@
 
 	// Language Detection
 	let enforceLanguageDetection = false;
+
+	// Task agent settings
+	let maxToolCalls: number = 10;
 
 	// GDPR Settings
 	let gdprEncryptMessages = true;
@@ -112,17 +119,42 @@
 			id: 'google_calendar',
 			name: 'Google Calendar',
 			description: 'Manage Google Calendar events - create, read, update, and delete appointments'
-		}
+		},
+		{
+			id: 'powerpoint_generation',
+			name: 'PowerPoint Generation',
+			description: 'Create PowerPoint presentations with slides and audio narration',
+			taskOnly: true,
+			group: ['create_presentation', 'add_slide', 'generate_slide_audio', 'save_presentation']
+		},
+		// Hidden sub-tools for name lookup in selected tools summary
+		{ id: 'create_presentation', name: 'Create Presentation', hidden: true },
+		{ id: 'add_slide', name: 'Add Slide', hidden: true },
+		{ id: 'generate_slide_audio', name: 'Generate Slide Audio', hidden: true },
+		{ id: 'save_presentation', name: 'Save Presentation', hidden: true }
 	];
 
 	// Filter tools based on agent type
 	$: filteredTools = availableTools.filter((tool) => {
+		if ((tool as any).hidden) return false;
 		// Human handoff is only available for chatbot agents
 		if (tool.id === 'request_human_handoff') {
 			return type === 'chatbot';
 		}
+		// PowerPoint Generation is only available for task agents
+		if ((tool as any).taskOnly) {
+			return type === 'task';
+		}
 		return true;
 	});
+
+	function isToolSelected(toolId: string): boolean {
+		const tool = availableTools.find((t) => t.id === toolId) as any;
+		if (tool?.group) {
+			return tool.group.some((id: string) => selectedTools.includes(id));
+		}
+		return selectedTools.includes(toolId);
+	}
 
 	function nextStep() {
 		if (step < 4) {
@@ -136,8 +168,16 @@
 		}
 	}
 
-	function toggleTool(toolId) {
-		if (selectedTools.includes(toolId)) {
+	function toggleTool(toolId: string) {
+		const tool = availableTools.find((t) => t.id === toolId) as any;
+		if (tool?.group) {
+			const allSelected = tool.group.every((id: string) => selectedTools.includes(id));
+			if (allSelected) {
+				selectedTools = selectedTools.filter((id) => !tool.group.includes(id));
+			} else {
+				selectedTools = [...new Set([...selectedTools, ...tool.group])];
+			}
+		} else if (selectedTools.includes(toolId)) {
 			selectedTools = selectedTools.filter((id) => id !== toolId);
 		} else {
 			selectedTools = [...selectedTools, toolId];
@@ -168,6 +208,8 @@
 				return 'fas fa-hand-paper';
 			case 'google_calendar':
 				return 'fab fa-google';
+			case 'powerpoint_generation':
+				return 'fas fa-file-powerpoint';
 			default:
 				return 'fas fa-tools';
 		}
@@ -197,6 +239,8 @@
 				return 'from-indigo-500 to-blue-500';
 			case 'google_calendar':
 				return 'from-red-600 to-yellow-500';
+			case 'powerpoint_generation':
+				return 'from-orange-600 to-red-700';
 			default:
 				return 'from-indigo-500 to-purple-600';
 		}
@@ -255,6 +299,7 @@
 				is_active: true,
 				config: {
 					enable_streaming: streamingEnabled,
+					...(type === 'task' ? { max_tool_calls: maxToolCalls } : {}),
 					...(type === 'chatbot' ? { enforce_language_detection: enforceLanguageDetection } : {}),
 					...(type === 'chatbot'
 						? {
@@ -304,10 +349,13 @@
 
 			const agent = await res.json();
 
-			// If Google Calendar tool is selected, show config modal
+			// Show config modals if needed (Google Calendar takes priority)
 			if (selectedTools.includes('google_calendar')) {
 				createdAgentId = agent._id;
 				showGoogleCalendarConfig = true;
+			} else if (selectedTools.includes('generate_slide_audio')) {
+				createdAgentId = agent._id;
+				showVoiceConfig = true;
 			} else {
 				dispatch('created', agent);
 			}
@@ -911,7 +959,7 @@
 								type="button"
 								on:click={() => toggleTool(tool.id)}
 								disabled={loading}
-								class="relative rounded-lg border-2 p-4 text-left transition-all {selectedTools.includes(
+								class="relative rounded-lg border-2 p-4 text-left transition-all {isToolSelected(
 									tool.id
 								)
 									? 'border-indigo-500 bg-indigo-500/10'
@@ -930,7 +978,7 @@
 										<p class="text-sm text-gray-400">{tool.description}</p>
 									</div>
 								</div>
-								{#if selectedTools.includes(tool.id)}
+{#if isToolSelected(tool.id)}
 									<div class="absolute right-3 top-3">
 										<i class="fas fa-check-circle text-indigo-500"></i>
 									</div>
@@ -944,7 +992,7 @@
 							<h4 class="mb-2 font-medium text-indigo-400">Selected Tools:</h4>
 							<div class="flex flex-wrap gap-2">
 								{#each selectedTools as toolId}
-									{@const tool = filteredTools.find((t) => t.id === toolId)}
+									{@const tool = availableTools.find((t) => t.id === toolId)}
 									<span
 										class="inline-flex items-center rounded-md bg-indigo-500/20 px-2.5 py-0.5 text-sm font-medium text-indigo-400"
 									>
@@ -971,6 +1019,26 @@
 									<p class="text-sm text-yellow-300">
 										After creating the agent, you'll need to configure OAuth tokens and calendar
 										settings to enable this tool.
+									</p>
+								</div>
+							</div>
+						</div>
+					{/if}
+
+					<!-- PowerPoint Voice Configuration Notice -->
+					{#if isToolSelected('powerpoint_generation')}
+						<div class="rounded-lg border border-orange-500/20 bg-orange-500/10 p-4">
+							<div class="flex items-start space-x-3">
+								<div
+									class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-orange-600 to-red-700"
+								>
+									<i class="fas fa-microphone text-sm text-white"></i>
+								</div>
+								<div>
+									<h4 class="font-medium text-orange-400">Voice Configuration Available</h4>
+									<p class="text-sm text-orange-300">
+										After creating the agent, you can optionally configure the audio provider
+										(OpenAI or ElevenLabs) for slide narration.
 									</p>
 								</div>
 							</div>
@@ -1009,6 +1077,34 @@
 						</div>
 					</div>
 				</div>
+
+				{#if type === 'task'}
+					<!-- Max Tool Calls (task agents only) -->
+					<div class="space-y-4">
+						<div>
+							<h4 class="text-lg font-semibold text-gray-100">Tool Execution Limit</h4>
+							<p class="text-sm text-gray-400">
+								Maximum number of tool calls the agent can make per execution
+							</p>
+						</div>
+						<div class="rounded-lg border border-gray-700 bg-gray-800 p-4">
+							<div class="flex items-center justify-between">
+								<div>
+									<h5 class="font-medium text-gray-100">Max Tool Calls</h5>
+									<p class="text-sm text-gray-400">Limits runaway loops. Default is 10.</p>
+								</div>
+								<input
+									type="number"
+									bind:value={maxToolCalls}
+									min="1"
+									max="100"
+									disabled={loading}
+									class="w-24 rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-center text-gray-100 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50"
+								/>
+							</div>
+						</div>
+					</div>
+				{/if}
 
 				{#if type === 'chatbot'}
 					<!-- Language Detection Configuration -->
@@ -1346,6 +1442,22 @@
 		}}
 		on:deleted={() => {
 			showGoogleCalendarConfig = false;
+			dispatch('created');
+		}}
+	/>
+{/if}
+
+<!-- Voice Config Modal (shown after agent creation if powerpoint_generation tool is selected) -->
+{#if showVoiceConfig && createdAgentId}
+	<VoiceConfigModal
+		{data}
+		agent={{ _id: createdAgentId, name: name }}
+		on:close={() => {
+			showVoiceConfig = false;
+			dispatch('created');
+		}}
+		on:configured={() => {
+			showVoiceConfig = false;
 			dispatch('created');
 		}}
 	/>

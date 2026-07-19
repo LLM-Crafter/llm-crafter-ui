@@ -1,7 +1,8 @@
-﻿<script lang="ts">
+<script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import { api } from '$lib/api';
 	import GoogleCalendarConfigModal from './GoogleCalendarConfigModal.svelte';
+	import VoiceConfigModal from './VoiceConfigModal.svelte';
 
 	export let data;
 	export let agent;
@@ -12,6 +13,9 @@
 
 	// Google Calendar config modal state
 	let showGoogleCalendarConfig = false;
+
+	// Voice config modal state
+	let showVoiceConfig = false;
 
 	// Initialize values from existing agent
 	let name = agent.name || '';
@@ -42,6 +46,9 @@
 		agent.config?.enforce_language_detection !== undefined
 			? agent.config.enforce_language_detection
 			: false;
+
+	// Initialize task agent settings
+	let maxToolCalls: number = agent.config?.max_tool_calls ?? 10;
 
 	// Initialize GDPR settings
 	let gdprEncryptMessages: boolean =
@@ -116,20 +123,53 @@
 			id: 'google_calendar',
 			name: 'Google Calendar',
 			description: 'Manage Google Calendar events - create, read, update, and delete appointments'
-		}
+		},
+		{
+			id: 'powerpoint_generation',
+			name: 'PowerPoint Generation',
+			description: 'Create PowerPoint presentations with slides and audio narration',
+			taskOnly: true,
+			group: ['create_presentation', 'add_slide', 'generate_slide_audio', 'save_presentation']
+		},
+		// Hidden sub-tools for name lookup in selected tools summary
+		{ id: 'create_presentation', name: 'Create Presentation', hidden: true },
+		{ id: 'add_slide', name: 'Add Slide', hidden: true },
+		{ id: 'generate_slide_audio', name: 'Generate Slide Audio', hidden: true },
+		{ id: 'save_presentation', name: 'Save Presentation', hidden: true }
 	];
 
 	// Filter tools based on agent type
 	$: filteredTools = availableTools.filter((tool) => {
+		if ((tool as any).hidden) return false;
 		// Human handoff is only available for chatbot agents
 		if (tool.id === 'request_human_handoff') {
 			return agent.type === 'chatbot';
 		}
+		// PowerPoint Generation is only available for task agents
+		if ((tool as any).taskOnly) {
+			return agent.type === 'task';
+		}
 		return true;
 	});
 
-	function toggleTool(toolId) {
-		if (selectedTools.includes(toolId)) {
+	function isToolSelected(toolId: string): boolean {
+		const tool = availableTools.find((t) => t.id === toolId) as any;
+		if (tool?.group) {
+			return tool.group.some((id: string) => selectedTools.includes(id));
+		}
+		return selectedTools.includes(toolId);
+	}
+
+	function toggleTool(toolId: string) {
+		const tool = availableTools.find((t) => t.id === toolId) as any;
+		if (tool?.group) {
+			const allSelected = tool.group.every((id: string) => selectedTools.includes(id));
+			if (allSelected) {
+				selectedTools = selectedTools.filter((id) => !tool.group.includes(id));
+			} else {
+				selectedTools = [...new Set([...selectedTools, ...tool.group])];
+			}
+		} else if (selectedTools.includes(toolId)) {
 			selectedTools = selectedTools.filter((id) => id !== toolId);
 		} else {
 			selectedTools = [...selectedTools, toolId];
@@ -160,6 +200,8 @@
 				return 'fas fa-hand-paper';
 			case 'google_calendar':
 				return 'fab fa-google';
+			case 'powerpoint_generation':
+				return 'fas fa-file-powerpoint';
 			default:
 				return 'fas fa-tools';
 		}
@@ -189,6 +231,8 @@
 				return 'from-indigo-500 to-blue-500';
 			case 'google_calendar':
 				return 'from-red-600 to-yellow-500';
+			case 'powerpoint_generation':
+				return 'from-orange-600 to-red-700';
 			default:
 				return 'from-indigo-500 to-purple-600';
 		}
@@ -245,6 +289,7 @@
 				is_active: isActive,
 				config: {
 					enable_streaming: streamingEnabled,
+					...(agent.type === 'task' ? { max_tool_calls: maxToolCalls } : {}),
 					...(agent.type === 'chatbot'
 						? {
 								enforce_language_detection: enforceLanguageDetection,
@@ -546,7 +591,7 @@
 							<textarea
 								id="ps-edit-flow"
 								bind:value={promptSections.conversation_flow}
-								placeholder="1. Greet → 2. Qualify → 3. Search → 4. Present → 5. Close"
+								placeholder="1. Greet ? 2. Qualify ? 3. Search ? 4. Present ? 5. Close"
 								rows="2"
 								disabled={loading}
 								class="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
@@ -820,9 +865,7 @@
 							type="button"
 							on:click={() => toggleTool(tool.id)}
 							disabled={loading}
-							class="relative rounded-lg border-2 p-4 text-left transition-all {selectedTools.includes(
-								tool.id
-							)
+							class="relative rounded-lg border-2 p-4 text-left transition-all {isToolSelected(tool.id)
 								? 'border-indigo-500 bg-indigo-500/10'
 								: 'border-gray-700 hover:border-gray-600'}"
 						>
@@ -839,7 +882,7 @@
 									<p class="text-sm text-gray-400">{tool.description}</p>
 								</div>
 							</div>
-							{#if selectedTools.includes(tool.id)}
+							{#if isToolSelected(tool.id)}
 								<div class="absolute right-3 top-3">
 									<i class="fas fa-check-circle text-indigo-500"></i>
 								</div>
@@ -895,6 +938,36 @@
 						</div>
 					</div>
 				{/if}
+
+				<!-- PowerPoint Voice Configuration -->
+				{#if isToolSelected('powerpoint_generation')}
+					<div class="rounded-lg border border-orange-500/20 bg-orange-500/10 p-4">
+						<div class="flex items-start justify-between">
+							<div class="flex items-start space-x-3">
+								<div
+									class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-orange-600 to-red-700"
+								>
+									<i class="fas fa-microphone text-sm text-white"></i>
+								</div>
+								<div>
+									<h4 class="font-medium text-orange-400">Voice Configuration</h4>
+									<p class="text-sm text-orange-300">
+										Configure audio provider and voice for slide narration
+									</p>
+								</div>
+							</div>
+							<button
+								type="button"
+								on:click={() => (showVoiceConfig = true)}
+								disabled={loading}
+								class="rounded-lg bg-gradient-to-r from-orange-600 to-red-700 px-4 py-2 text-sm font-medium text-white transition-all hover:from-orange-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-orange-500"
+							>
+								<i class="fas fa-cog mr-2"></i>
+								Configure
+							</button>
+						</div>
+					</div>
+				{/if}
 			</div>
 
 			<!-- Streaming Configuration -->
@@ -927,6 +1000,34 @@
 					</label>
 				</div>
 			</div>
+
+			{#if agent.type === 'task'}
+				<!-- Max Tool Calls (task agents only) -->
+				<div class="space-y-6">
+					<div class="flex items-center space-x-2">
+						<i class="fas fa-repeat text-purple-400"></i>
+						<h3 class="text-lg font-semibold text-gray-100">Tool Execution Limit</h3>
+					</div>
+					<div
+						class="flex items-center justify-between rounded-lg border border-gray-700 bg-gray-800 p-4"
+					>
+						<div>
+							<h4 class="font-medium text-gray-100">Max Tool Calls</h4>
+							<p class="text-sm text-gray-400">
+								Maximum number of tool calls per execution. Limits runaway loops. Default is 10.
+							</p>
+						</div>
+						<input
+							type="number"
+							bind:value={maxToolCalls}
+							min="1"
+							max="100"
+							disabled={loading}
+							class="w-24 rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-center text-gray-100 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50"
+						/>
+					</div>
+				</div>
+			{/if}
 
 			{#if agent.type === 'chatbot'}
 				<!-- Language Detection Configuration -->
@@ -1277,6 +1378,18 @@
 		}}
 		on:deleted={() => {
 			showGoogleCalendarConfig = false;
+		}}
+	/>
+{/if}
+
+<!-- Voice Config Modal -->
+{#if showVoiceConfig}
+	<VoiceConfigModal
+		{data}
+		{agent}
+		on:close={() => (showVoiceConfig = false)}
+		on:configured={() => {
+			showVoiceConfig = false;
 		}}
 	/>
 {/if}
